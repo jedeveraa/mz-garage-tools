@@ -222,14 +222,17 @@ input::placeholder{color:var(--ink-3);opacity:.6}
 .tab:active{transform:translateY(1px)}
 .tab .t-name{font-family:var(--cond);font-weight:800;font-size:26px;line-height:.95;text-transform:uppercase;color:var(--m-ink)}
 .tab .t-meta{font-family:var(--mono);font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3)}
+.tab{padding-right:96px}
+/* the count is the loudest thing on the tab: a big condensed numeral anchored to the right edge */
 .tab .t-count{
-  position:absolute;right:10px;top:10px;min-width:28px;height:24px;padding:0 7px;display:inline-grid;place-items:center;
-  font-family:var(--mono);font-size:var(--fs-ui);font-weight:600;border-radius:12px;
-  background:var(--m-soft);color:var(--m-ink);font-variant-numeric:tabular-nums;
+  position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  font-family:var(--cond);font-weight:800;font-size:56px;line-height:.85;letter-spacing:-.01em;
+  color:var(--m-ink);font-variant-numeric:tabular-nums;
 }
+.tab .t-count.is-zero{opacity:.35}
 .tab[aria-pressed="true"]{background:var(--m);border-color:var(--m)}
 .tab[aria-pressed="true"] .t-name,.tab[aria-pressed="true"] .t-meta{color:var(--m-on)}
-.tab[aria-pressed="true"] .t-count{background:var(--m-on);color:var(--m)}
+.tab[aria-pressed="true"] .t-count{color:var(--m-on)}
 
 /* ---------- Toolbar: view switch, search, refresh ---------- */
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
@@ -419,7 +422,7 @@ input::placeholder{color:var(--ink-3);opacity:.6}
   .tab{min-height:72px;padding:10px 10px 10px 14px;justify-content:space-between}
   .tab .t-name{font-size:22px}
   .tab .t-meta{display:none}
-  .tab .t-count{position:static}
+  .tab .t-count{position:static;transform:none;font-size:34px}
   .fresh{margin-left:0;width:100%;justify-content:space-between}
 }
 </style>
@@ -731,7 +734,7 @@ input::placeholder{color:var(--ink-3);opacity:.6}
       var n = groupsFor(t.id, 'new').length, loaded = !!state.data[t.id];
       return '<button class="tab" type="button" data-tab="' + t.id + '" data-mode="' + t.mode + '" aria-pressed="' + (t.id === state.tab) + '">' +
         '<span class="t-name">' + esc(t.name) + '</span><span class="t-meta">' + esc(t.sheet) + '</span>' +
-        '<span class="t-count" aria-label="' + n + ' to pack">' + (loaded ? n : '&middot;') + '</span></button>';
+        '<span class="t-count' + (loaded && n === 0 ? ' is-zero' : '') + '" aria-label="' + n + ' to pack">' + (loaded ? n : '&middot;') + '</span></button>';
     }).join('');
   }
 
