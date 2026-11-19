@@ -1517,7 +1517,10 @@ function parseSheet(text){
     rows[code] = {row: sheetRow, stock: sheetStock(raw)};
   }
   if(!count) throw new Error('The sheet has no item rows yet.');
-  return {rows:rows, count:count, dups:dups, bad:bad, missing:missing, hash:hashText(text)};
+  /* the column list is part of the hash: when the app reads a new column, the first sync redraws
+     even if the sheet did not change, so an old saved copy never keeps the old numbers */
+  var cols = SHEET_COLS.map(function(c){ return c.k; }).join(',');
+  return {rows:rows, count:count, dups:dups, bad:bad, missing:missing, hash:hashText(cols + '\n' + text)};
 }
 /* The Dashboard formulas give 0, not blank. A row where every number is 0
    means "no numbers yet", same as a blank row. v:2 marks the Dashboard shape. */
