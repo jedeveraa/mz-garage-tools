@@ -1,0 +1,3273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Hot Wheels Item Inventory System · MZ Garage</title>
+<link rel="icon" type="image/png" href="assets/mz-garage-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Saira+Condensed:wght@600;700;800&family=Azeret+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* MZ Garage: navy ink, fire orange accent, blue-violet ribbon (from the logo banner) */
+  --paper:#F5F7FF;
+  --paper-2:#ECEFFA;
+  --paper-3:#E1E6F5;
+  --ink:#0D1436;
+  --ink-2:#3E4A78;
+  --ink-3:#5E6A96;
+  --rule:#DCE1F0;
+  --rule-2:#C3CAE2;
+  --accent:#F8500A;          /* fills, bars */
+  --accent-ink:#C33A02;      /* orange text on light paper (AA) */
+  --on-accent:#0D1436;       /* text sitting on an orange fill, like the logo outline */
+  --accent-soft:#FFE8DA;
+  --good:#1D7A5F;
+  --good-soft:#DBF0E7;
+  --bad:#C62828;           /* negative balance: over invoiced, short stock */
+  --bad-soft:#FBE3E1;
+  --fire:linear-gradient(100deg,#FFC42E,#FF8A10 58%,#F8500A);
+  --ribbon:linear-gradient(90deg,#2A6FEE 0%,#4B4AE2 34%,#6B37DA 66%,#8A2BD6 100%);
+  --font-cond:'Saira Condensed','Arial Narrow',sans-serif;
+  --shadow:0 1px 0 rgba(13,20,54,.06), 0 12px 32px -18px rgba(13,20,54,.5);
+  --r:3px;
+  /* the list is the index, the detail is the viewer: list stays narrow, detail takes the rest */
+  --list:clamp(320px, 30vw, 380px);
+  /* type scale: mono caps never go under 11px, anything you read goes 13px+ */
+  --fs-cap:11px;
+  --fs-ui:12px;
+  --fs-code:13px;
+  --fs-meta:14px;
+  --fs-body:15px;
+  --fs-name:16px;
+  --ls-cap:.1em;
+  /* v3 stock tags: one color per miner tag, reused in the tally, tiles and editor */
+  --c-paid:var(--good);
+  --c-hold:#2A6FEE;
+  --c-inv:var(--accent);
+  --c-semi:#7B3FD9;
+}
+:root:not([data-theme="light"]) { color-scheme: light; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0A1130;
+    --paper-2:#101838;
+    --paper-3:#182248;
+    --ink:#EEF2FF;
+    --ink-2:#9AA6CE;
+    --ink-3:#8190C0;
+    --rule:#233060;
+    --rule-2:#35457E;
+    --accent:#FF9A16;
+    --accent-ink:#FF9A16;
+    --accent-soft:#312A33;
+    --good:#3FDCA0;
+    --good-soft:#0F2A2A;
+    --bad:#FF6B6B;
+    --bad-soft:#341A2A;
+    --c-hold:#6E9BFF;
+    --c-semi:#B28CFF;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0A1130; --paper-2:#101838; --paper-3:#182248;
+  --ink:#EEF2FF; --ink-2:#9AA6CE; --ink-3:#8190C0;
+  --rule:#233060; --rule-2:#35457E;
+  --accent:#FF9A16; --accent-ink:#FF9A16; --accent-soft:#312A33;
+  --good:#3FDCA0; --good-soft:#0F2A2A;
+  --bad:#FF6B6B; --bad-soft:#341A2A;
+  --c-hold:#6E9BFF; --c-semi:#B28CFF;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Archivo',system-ui,sans-serif; font-size:var(--fs-body); line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body::before{mix-blend-mode:screen;opacity:.16}}
+:root[data-theme="dark"] body::before{mix-blend-mode:screen;opacity:.16}
+
+.mono{font-family:'Azeret Mono',ui-monospace,monospace;font-variant-ligatures:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+a{color:inherit}
+
+/* ---------- shell ---------- */
+.app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+.topbar{
+  position:relative;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:14px 28px 16px 22px;
+}
+/* the blue-violet banner from the logo, run along the bottom of the header */
+.topbar::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--ribbon);
+}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand .logo{
+  width:60px;height:60px;flex:none;display:block;object-fit:contain;
+  filter:drop-shadow(0 4px 8px rgba(13,20,54,.18));
+}
+.brand .btext{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand .kicker{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+.brand h1{
+  font-family:var(--font-cond);font-weight:800;font-size:clamp(22px,2.4vw,31px);line-height:1;
+  letter-spacing:.005em;text-transform:uppercase;
+}
+.brand h1 em{font-style:normal;color:var(--accent-ink)}
+
+.topmeta{display:flex;align-items:center;gap:26px;padding-bottom:4px}
+.stat{text-align:right;line-height:1.15}
+.stat b{display:block;font-family:'Azeret Mono',monospace;font-size:22px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{display:block;margin-top:3px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3)}
+.stat.good b{color:var(--good)}
+.toolbtns{display:flex;gap:8px;padding-bottom:2px}
+.tbtn{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  padding:9px 14px;border:1px solid var(--rule-2);border-radius:var(--r);color:var(--ink-2);
+  transition:.16s ease;white-space:nowrap;
+}
+.tbtn:hover{border-color:var(--ink);color:var(--ink);background:var(--paper-2)}
+.tbtn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tbtn.primary:hover{background:var(--fire);border-color:var(--accent);color:var(--on-accent)}
+.tbtn.warn{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+
+/* ---------- search ---------- */
+.searchwrap{padding:26px 28px 0;border-bottom:1px solid var(--rule)}
+.searchrow{display:flex;align-items:center;gap:16px;position:relative}
+.searchrow .sigil{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);font-weight:600;color:var(--accent-ink);
+  letter-spacing:.12em;padding-bottom:12px;
+}
+#q{
+  flex:1;background:none;border:0;outline:0;
+  font-size:clamp(24px,3.4vw,40px);font-weight:400;letter-spacing:-.025em;
+  padding:0 0 12px;
+}
+#q::placeholder{color:var(--ink-3);opacity:.7}
+.searchline{height:2px;background:var(--rule-2);position:relative;overflow:hidden}
+.searchline::after{
+  content:'';position:absolute;inset:0;background:var(--fire);
+  transform:scaleX(0);transform-origin:left;transition:transform .42s cubic-bezier(.2,.8,.2,1);
+}
+.searchrow:focus-within + .searchline::after{transform:scaleX(1)}
+.clearq{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.08em;color:var(--ink-3);
+  padding-bottom:12px;text-transform:uppercase;
+}
+.clearq:hover{color:var(--accent-ink)}
+
+.filterrail{position:relative}
+.filterrail::before,.filterrail::after{
+  content:'';position:absolute;top:0;bottom:0;width:52px;z-index:2;
+  pointer-events:none;opacity:0;transition:opacity .22s ease;
+}
+.filterrail::before{left:0;background:linear-gradient(90deg,var(--paper) 22%,transparent)}
+.filterrail::after{right:0;background:linear-gradient(270deg,var(--paper) 22%,transparent)}
+.filterrail.spill-l::before{opacity:1}
+.filterrail.spill-r::after{opacity:1}
+.filters{
+  display:flex;align-items:center;gap:8px;padding:14px 0 15px;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
+  touch-action:pan-x;overscroll-behavior-x:contain;
+  scroll-padding-inline:24px;
+  cursor:grab;
+}
+.filters::-webkit-scrollbar{display:none}
+.filters.dragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
+.chip{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  padding:8px 13px;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-2);
+  white-space:nowrap;transition:.14s ease;flex:none;
+}
+.chip:hover{border-color:var(--ink-2);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chip.flag[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.chipdiv{width:1px;height:20px;background:var(--rule-2);flex:none;margin:0 4px}
+select.sortsel{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  background:none;border:1px solid var(--rule-2);border-radius:100px;padding:8px 10px;color:var(--ink-2);
+  cursor:pointer;flex:none;
+}
+
+/* ---------- panes ---------- */
+.panes{flex:1;display:flex;min-height:0}
+.listpane{width:var(--list);flex:none;min-width:0;overflow-y:auto;border-right:1px solid var(--rule)}
+.listhead{
+  position:sticky;top:0;z-index:2;background:var(--paper);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 28px;border-bottom:1px solid var(--rule);
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+}
+
+.row{
+  display:grid;grid-template-columns:48px 72px 1fr auto;align-items:center;gap:16px;
+  padding:12px 28px 12px 0;border-bottom:1px solid var(--rule);
+  cursor:pointer;position:relative;width:100%;text-align:left;
+  animation:rowin .3s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes rowin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.row::before{
+  content:'';position:absolute;left:0;top:-1px;bottom:-1px;width:3px;background:var(--rule-2);
+  transform:scaleY(0);transform-origin:center;transition:transform .2s ease,width .2s ease;
+}
+.row:hover{background:var(--paper-2)}
+.row:hover::before{transform:scaleY(1)}
+/* the item open on the right: tinted row, thick orange bar, bold name, VIEWING tag */
+.row[aria-current="true"]{background:var(--accent-soft)}
+.row[aria-current="true"]::before{transform:scaleY(1);width:5px;background:var(--accent)}
+.row[aria-current="true"] .idx{color:var(--accent-ink);font-weight:600}
+.row[aria-current="true"] .rowname{font-weight:700}
+.row[aria-current="true"] .rowcode{color:var(--ink-2)}
+.row[aria-current="true"] .thumb{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.row[aria-current="true"] .rowtags::before{
+  content:'\25B6\00a0 Viewing';order:-1;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:#fff;background:var(--ribbon);border-radius:100px;padding:4px 10px;white-space:nowrap;
+}
+.row .idx{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);color:var(--ink-3);text-align:right;
+  padding-left:18px;font-variant-numeric:tabular-nums;
+}
+.thumb{
+  display:grid;width:72px;height:54px;border:1px solid var(--rule);background:var(--paper-3);border-radius:2px;
+  overflow:hidden;display:grid;place-items:center;flex:none;
+}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .ph{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3)}
+.rowmain{min-width:0;display:block}
+.rowname{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
+  font-size:var(--fs-name);font-weight:500;line-height:1.35;letter-spacing:-.008em;
+  overflow:hidden;overflow-wrap:anywhere;
+}
+.rowname mark{background:var(--accent-soft);color:var(--accent-ink);padding:0 1px;border-radius:2px}
+.row[aria-current="true"] mark{background:var(--paper)}
+.rowcode{
+  display:block;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-code);color:var(--ink-3);letter-spacing:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;
+}
+.rowcode mark{background:var(--accent-soft);color:var(--accent-ink)}
+.rowtags{display:flex;align-items:center;gap:8px;flex:none}
+.tag{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-2);border:1px solid var(--rule-2);border-radius:100px;padding:4px 9px;white-space:nowrap;
+}
+.linkdot{width:9px;height:9px;border-radius:100px;background:var(--rule-2);flex:none}
+.linkdot.on{background:var(--good)}
+
+.empty{padding:70px 28px;text-align:center;color:var(--ink-3)}
+.empty p{font-family:var(--font-cond);font-weight:700;font-size:28px;text-transform:uppercase;letter-spacing:.01em;color:var(--ink-2)}
+.empty span{font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- detail ---------- */
+.detail{flex:1;min-width:0;overflow-y:auto;background:var(--paper-2)}
+.detail.blank{display:grid;place-items:center;padding:40px}
+.blankmsg{text-align:center;max-width:340px}
+.blankmsg .logo{width:96px;height:96px;display:block;margin:0 auto 18px;object-fit:contain;opacity:.95}
+.blankmsg h2{font-family:var(--font-cond);font-weight:800;font-size:40px;line-height:1.05;text-transform:uppercase;letter-spacing:.005em}
+.blankmsg h2 em{font-style:normal;color:var(--accent-ink)}
+.blankmsg p{margin-top:12px;font-size:var(--fs-body);color:var(--ink-2);line-height:1.6}
+.kbd{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);border:1px solid var(--rule-2);
+  border-radius:3px;padding:2px 6px;background:var(--paper);
+}
+
+.dwrap{padding:0 0 60px;animation:din .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes din{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.dphoto{
+  width:100%;height:min(40vh,340px);background:var(--paper-3);border-bottom:1px solid var(--rule);
+  display:grid;place-items:center;position:relative;overflow:hidden;
+  container-type:inline-size;
+}
+/* pinned to the frame: as a plain grid child the img kept its natural height and overflowed */
+.dphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in;
+  transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.dphoto:hover img{transform:scale(1.02)}
+.dphoto .photobtns{position:absolute;right:12px;bottom:12px;z-index:2;display:flex;gap:8px}
+.dphoto.noimg .photobtns{display:none}
+.dlimg{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  background:var(--paper);border:1px solid var(--rule-2);border-radius:var(--r);
+  padding:9px 13px;color:var(--ink-2);box-shadow:var(--shadow);transition:.14s;white-space:nowrap;
+}
+.dlimg:hover{border-color:var(--accent);color:var(--accent-ink)}
+/* small photo column: buttons share the bottom edge and drop the word "photo" */
+@container (max-width:300px){
+  .dphoto .photobtns{left:8px;right:8px;bottom:8px;gap:6px}
+  .dlimg{flex:1;padding:8px 6px;text-align:center}
+  .dlimg .pw{display:none}
+}
+.dphoto .missing{text-align:center;padding:24px}
+.dphoto .missing b{
+  display:block;font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:var(--ls-cap);
+  text-transform:uppercase;color:var(--ink-3);
+}
+.dphoto .missing code{
+  display:inline-block;margin-top:10px;font-family:'Azeret Mono',monospace;font-size:var(--fs-code);
+  background:var(--paper);border:1px dashed var(--rule-2);padding:6px 10px;border-radius:3px;color:var(--ink-2);
+}
+/* detail = .dside (photo + who it is) and .dmain (stock + posts).
+   Phone: stacked. 981+: sticky photo column, name + stock + posts beside it. 1440+: same, bigger. */
+.dident{padding:26px 30px 0}
+.dmain{padding:0 30px}
+.dcode{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dcode button{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-meta);font-weight:500;letter-spacing:-.01em;
+  color:var(--accent-ink);border-bottom:1px dashed var(--accent);padding-bottom:1px;text-align:left;
+}
+.dcode button:hover{opacity:.7}
+.dcode .copied{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--good)}
+.dname{font-size:28px;font-weight:600;line-height:1.18;letter-spacing:-.022em}
+.dmeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+
+.sect{margin-top:32px;border-top:1px solid var(--rule);padding-top:16px}
+.sect h3{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;display:flex;justify-content:space-between;align-items:center;
+}
+.postcard{
+  margin-top:12px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);
+  padding:15px 16px;
+}
+.postcard .ptop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.postcard .ptitle{font-size:var(--fs-body);font-weight:600;letter-spacing:-.01em}
+.postcard .ptitle.untitled{font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase;font-weight:500}
+.postcard .purl{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-code);line-height:1.55;color:var(--ink-2);
+  margin-top:8px;word-break:break-all;
+}
+.postcard .pacts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pact{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--rule-2);border-radius:var(--r);padding:9px 12px;color:var(--ink-2);transition:.14s;
+  text-decoration:none;display:inline-block;
+}
+.pact:hover{border-color:var(--ink);color:var(--ink)}
+.pact.go{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.pact.go:hover{background:var(--fire);color:var(--on-accent)}
+.nopost{
+  margin-top:12px;border:1px dashed var(--rule-2);border-radius:var(--r);padding:20px 16px;
+  text-align:center;color:var(--ink-2);font-size:var(--fs-meta);line-height:1.6;
+}
+.notes{margin-top:12px;font-size:var(--fs-body);color:var(--ink-2);line-height:1.65;white-space:pre-wrap}
+.dacts{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+
+/* ---------- stock and miners (v3) ----------
+   Remaining = Quantity arrived - (Paid + Paid-hold + Invoiced + Semi-paid).
+   "Did not get" and "Waiting" are shown, never subtracted. */
+.slink{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;
+  color:var(--accent-ink);border-bottom:1px dashed var(--accent);padding-bottom:1px;font-weight:500;
+}
+.slink:hover{opacity:.7}
+.stockcard{
+  container-type:inline-size;
+  margin-top:12px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);overflow:hidden;
+}
+.shero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:18px 18px 16px}
+.shero .big{
+  font-family:var(--font-cond);font-weight:800;font-size:78px;line-height:.8;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;color:var(--ink);
+}
+.s-left .shero .big,.s-offer .shero .big{color:var(--good)}
+.s-over .shero .big{color:var(--accent-ink)}
+.s-short .shero .big{color:var(--c-hold)}
+.s-out .shero .big,.s-none .shero .big{color:var(--ink-3)}
+/* sheet card: two balance tiles. sign = color. red = negative, green = positive, gray = zero */
+.sbal{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 14px 16px}
+.btile{
+  --tc:var(--ink-3);--tb:var(--paper-2);
+  position:relative;min-width:0;overflow:hidden;
+  display:flex;flex-direction:column;gap:12px;
+  padding:13px 16px 15px 19px;border-radius:var(--r);background:var(--tb);
+  animation:btin .45s cubic-bezier(.2,.8,.2,1) both;
+}
+.btile + .btile{animation-delay:.07s}
+.btile::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tc)}
+.btile.pos{--tc:var(--good);--tb:var(--good-soft)}
+.btile.neg{--tc:var(--bad);--tb:var(--bad-soft)}
+.btile.none{--tb:transparent;box-shadow:inset 0 0 0 1px var(--rule-2)}
+.btile .bhead{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;
+  color:var(--ink-2);font-weight:500;
+}
+.btile .bhead small{font-size:var(--fs-cap);color:var(--ink-3);letter-spacing:.04em;text-transform:none;white-space:nowrap}
+.btile .bn{
+  font-family:var(--font-cond);font-weight:800;font-size:68px;line-height:.8;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;color:var(--tc);
+}
+.btile .bstat{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:7px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 10px 5px 8px;border-radius:100px;white-space:nowrap;
+  background:var(--tc);color:var(--paper);
+}
+.btile .bstat i{font-style:normal;font-size:9px;line-height:1}
+.btile.zero .bstat,.btile.none .bstat{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--rule-2)}
+@keyframes btin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){ .btile{animation:none} }
+.shero .lbl{
+  margin-top:10px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);white-space:nowrap;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.shero .sright{display:flex;flex-direction:column;align-items:flex-end;gap:12px;text-align:right}
+.shero .arrs{display:flex;gap:22px}
+.shero .arr.zero b{color:var(--ink-3)}
+.shero .arr b{
+  display:block;font-family:'Azeret Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-.02em;
+  line-height:1;font-variant-numeric:tabular-nums;
+}
+.shero .arr span{
+  display:block;margin-top:6px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);
+  letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+}
+.sstatus{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--rule-2);border-radius:100px;padding:5px 11px;white-space:nowrap;color:var(--ink-2);
+}
+.sstatus.left{background:var(--good-soft);border-color:transparent;color:var(--good)}
+.sstatus.offer{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.sstatus.out{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.sstatus.short{background:var(--paper-2);border-color:var(--c-hold);color:var(--c-hold)}
+.sstatus.over{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.sstatus.none{border-style:dashed;color:var(--ink-3)}
+.sstatus.overstock{background:var(--paper-2);border-color:var(--c-hold);color:var(--c-hold)}
+.sstatus.shortstock{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.sstatus.complete{background:var(--good-soft);border-color:transparent;color:var(--good)}
+
+/* tally: one pip per unit (like cars on a shelf) up to 60, one bar above that */
+.tally{padding:0 18px}
+.pips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pip{
+  display:block;width:14px;height:20px;border-radius:2px;background:var(--sw);
+  animation:pipin .38s cubic-bezier(.2,.8,.2,1) both;
+}
+.pip.open{background:transparent;box-shadow:inset 0 0 0 1.5px var(--rule-2)}
+.pip.soon{background:transparent;outline:1.5px dashed var(--ink-3);outline-offset:-1.5px;opacity:.75}
+.pip.ahead{
+  background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.6) 0 2px,transparent 2px 5px);
+  outline:1.5px dashed var(--ink-3);outline-offset:1px;
+}
+.pip.extra{
+  background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.6) 0 2px,transparent 2px 5px);
+  box-shadow:0 0 0 1.5px var(--accent);
+}
+.pipcut{display:block;width:2px;height:28px;background:var(--ink);margin:0 4px;border-radius:1px}
+@keyframes pipin{from{opacity:0;transform:translateY(5px) scale(.55)}to{opacity:1;transform:none}}
+.sbar{
+  position:relative;height:16px;border-radius:2px;overflow:hidden;
+  box-shadow:inset 0 0 0 1px var(--rule-2);
+  background:repeating-linear-gradient(135deg,var(--paper-3) 0 4px,transparent 4px 8px);
+}
+.sbar .fill{display:flex;height:100%;transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+.sbar .fill i{display:block;height:100%}
+.sbar .fill i + i{box-shadow:inset 1px 0 0 var(--paper)}
+.sbar .upzone{
+  position:absolute;top:0;bottom:0;border-left:2px solid var(--ink);
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 3px,transparent 3px 7px);
+  box-shadow:inset 0 0 0 1px var(--ink-3);
+}
+.sbar .overzone{
+  position:absolute;top:0;bottom:0;right:0;border-left:2px solid var(--ink);
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.6) 0 3px,transparent 3px 7px);
+}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+.sformula{
+  padding:12px 18px 16px;font-family:'Azeret Mono',monospace;font-size:var(--fs-code);color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+.sformula b{color:var(--ink);font-weight:600}
+.sformula .upline{display:block;margin-top:4px;color:var(--ink-3)}
+.snote{
+  margin:0 18px 16px;padding:10px 12px;border-radius:var(--r);
+  background:var(--paper-2);font-size:var(--fs-meta);line-height:1.5;color:var(--ink-2);
+}
+.snote b{color:var(--ink);font-weight:600}
+.s-over .snote,.s-offer .snote{background:var(--accent-soft)}
+.s-over .snote b,.s-offer .snote b{color:var(--accent-ink)}
+.s-short .snote b{color:var(--c-hold)}
+
+.stiles{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
+.stile{padding:13px 12px 14px 14px;border-right:1px solid var(--rule);min-width:0}
+.stile:last-child{border-right:0}
+.skey{
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+}
+.skey i{width:9px;height:9px;border-radius:2px;background:var(--sw);flex:none}
+.stile b,.sfoot b{
+  display:block;margin-top:7px;font-family:'Azeret Mono',monospace;font-size:24px;font-weight:500;line-height:1;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+.stile small,.sfoot small{
+  display:block;margin-top:5px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3);
+}
+.stile.zero b,.sfoot .zero b{color:var(--ink-3)}
+/* Paid tile: Paid + Paid-hold + Semi-paid added up */
+.stile small.ssum{margin-top:8px;padding-top:7px;border-top:1px dashed var(--rule-2);color:var(--ink-2)}
+.stile .ssum b{margin-top:4px;font-size:16px;font-weight:600;color:var(--ink)}
+.sfoot{display:grid;grid-template-columns:1fr 132px;border-top:1px solid var(--rule);background:var(--paper-2)}
+.sfoot > div{padding:13px 14px 14px;min-width:0}
+.sdrop{border-right:1px solid var(--rule)}
+.sdrop .srow{display:flex;align-items:center;gap:14px;margin-top:7px}
+.sdrop .srow b{margin-top:0}
+.dchips{display:flex;flex-wrap:wrap;gap:5px}
+.dchip{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.04em;white-space:nowrap;
+  border:1px solid var(--rule-2);border-radius:100px;padding:3px 8px;color:var(--ink-2);background:var(--paper);
+}
+.dchip b{display:inline;margin:0 0 0 3px;font-size:inherit;font-weight:700;color:var(--ink);letter-spacing:0}
+.dchip.zero{opacity:.45}
+/* Dashboard card (sheet v5): order sources, collection completion, miner counts */
+.sorders{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 18px 14px}
+.sorders b{font-family:'Azeret Mono',monospace;font-size:var(--fs-code);font-weight:600;margin-right:4px;font-variant-numeric:tabular-nums}
+.scoll{border-top:1px solid var(--rule)}
+.scoll .supsub b{color:var(--ink);font-weight:600}
+.sminers{background:var(--paper-2);grid-template-columns:repeat(3,1fr)}
+/* 5 miner tiles in 3 + 2: the empty last cell stays as white space */
+@container (min-width:471px){
+  .sminers .stile:nth-child(3){border-right:0;border-bottom:1px solid var(--rule)}
+  .sminers .stile:nth-child(n+4){border-top:1px solid var(--rule)}
+  .sminers .stile:last-child{border-right:1px solid var(--rule)}
+}
+.sminers .stile{display:flex;flex-direction:column}
+.sminers .skey{flex:1;align-items:flex-end;white-space:normal}
+/* upcoming band: dashed = not here yet, same language as the .soon / .ahead pips */
+.sup{border-top:1px solid var(--rule)}
+.suphead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 14px 0}
+.suphead .supsub{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3);white-space:nowrap}
+.skey i.dash{background:transparent;outline:1.5px dashed var(--ink-3);outline-offset:-1.5px}
+.supbar{display:flex;gap:2px;height:10px;margin:11px 14px 13px}
+.supbar i{display:block;min-width:4px;border-radius:2px;transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+.scoll .supbar .free{opacity:.6}
+.supbar .claimed{background:var(--ink-2);
+  background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.45) 0 2px,transparent 2px 5px)}
+.supbar .free{background:transparent;outline:1.5px dashed var(--ink-3);outline-offset:-1.5px}
+.supbar .nostock{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent);
+  background-image:repeating-linear-gradient(135deg,var(--accent) 0 1.5px,transparent 1.5px 5px)}
+.sup .stiles{border-top:1px dashed var(--rule-2)}
+.sup .stile b.up{color:var(--ink)}
+.sup .stile.warn b{color:var(--accent-ink)}
+.sup.none{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px}
+.sup.none .supsub{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+@media (prefers-reduced-motion: reduce){ .supbar i{animation:none} }
+
+@container (max-width:470px){
+  .stiles{grid-template-columns:repeat(2,1fr)}
+  .stile:nth-child(2n){border-right:0}
+  .stile:nth-child(n+3){border-top:1px solid var(--rule)}
+  .shero .big{font-size:64px}
+  .btile .bn{font-size:56px}
+}
+@container (max-width:470px){
+  .suphead{flex-wrap:wrap}
+  .suphead .supsub{white-space:normal}
+}
+@container (max-width:380px){
+  .shero{flex-wrap:wrap;align-items:flex-start}
+  .shero .sright{width:100%;align-items:flex-start;text-align:left}
+  .sbal{grid-template-columns:1fr}
+  .sfoot{grid-template-columns:1fr}
+  .sdrop{border-right:0;border-bottom:1px solid var(--rule)}
+}
+
+/* the little stock hint on each list row */
+.stag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--rule-2);border-radius:100px;padding:4px 9px;white-space:nowrap;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+.stag::before{content:'';width:6px;height:6px;border-radius:100px;background:currentColor}
+.stag.left{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.stag.out{color:var(--ink-3)}
+.stag.short{color:var(--c-hold);border-color:var(--c-hold)}
+.stag.over{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}
+.stag.overstock{color:var(--c-hold);border-color:var(--c-hold)}
+.stag.shortstock{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}
+.stag.complete{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.stat.warn b{color:var(--accent-ink)}
+.stag.gone{color:var(--accent-ink);border:1px dashed var(--accent);background:transparent}
+
+/* ---------- google sheet sync (v4) ----------
+   The sheet owns the numbers. The pill in the header says how fresh they are. */
+.syncbox{display:flex;align-items:stretch;border:1px solid var(--rule-2);border-radius:var(--r);overflow:hidden;flex:none}
+.syncpill,.syncref{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-2);white-space:nowrap;transition:.14s ease;
+}
+.syncpill{padding:9px 12px}
+.syncref{padding:9px 11px;border-left:1px solid var(--rule-2);font-size:14px;letter-spacing:0}
+.syncpill:hover,.syncref:hover{background:var(--paper-2);color:var(--ink)}
+.syncref span{display:inline-block;line-height:1}
+.syncdot{width:8px;height:8px;border-radius:100px;background:var(--rule-2);flex:none}
+.sync-ok .syncdot{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+.sync-busy .syncdot{background:var(--c-hold);animation:syncpulse 1s ease-in-out infinite}
+.sync-busy .syncref span{animation:syncspin .8s linear infinite}
+.sync-err{border-color:var(--accent);background:var(--accent-soft)}
+.sync-err .syncdot{background:var(--accent)}
+.sync-err .syncpill,.sync-err .syncref{color:var(--accent-ink)}
+.sync-err .syncref{border-left-color:var(--accent)}
+.sync-off{border-style:dashed}
+.sync-off .syncref{display:none}
+.syncissue{
+  font-weight:700;letter-spacing:0;color:var(--on-accent);background:var(--accent);
+  border-radius:100px;padding:1px 7px;margin-left:2px;
+}
+@keyframes syncpulse{50%{opacity:.35}}
+@keyframes syncspin{to{transform:rotate(360deg)}}
+
+.shead-r{display:flex;align-items:center;gap:12px}
+.ssrc{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.06em;color:var(--ink-3)}
+.sstale{
+  margin-top:12px;padding:10px 12px;border-radius:var(--r);border:1px dashed var(--accent);
+  background:var(--accent-soft);font-size:var(--fs-meta);line-height:1.5;color:var(--ink-2);
+}
+.sstale b{color:var(--accent-ink);font-weight:600}
+.nopost .pacts{justify-content:center;margin-top:12px}
+.rmcard{
+  margin-top:12px;border:1px dashed var(--accent);border-radius:var(--r);background:var(--paper);padding:16px;
+}
+.rmcard .rmtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rmcard p{margin-top:10px;font-size:var(--fs-meta);line-height:1.6;color:var(--ink-2)}
+.rmcard ol{margin:10px 0 0 18px;font-size:var(--fs-meta);line-height:1.6;color:var(--ink-2)}
+.rmcard ol b{color:var(--ink);font-weight:600}
+.rmcard .pacts{margin-top:14px}
+
+/* sheet modal */
+.shstate{
+  display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper-2);
+}
+.shstate .syncdot{margin-top:9px;width:10px;height:10px}
+.shstate b{display:block;font-family:var(--font-cond);font-weight:700;font-size:24px;line-height:1.1;text-transform:uppercase;letter-spacing:.01em}
+.shstate span{display:block;margin-top:5px;font-size:var(--fs-meta);color:var(--ink-2);line-height:1.5}
+.shstate.sync-err{border-color:var(--accent);background:var(--accent-soft)}
+.shstate.sync-err b{color:var(--accent-ink)}
+.shsteps{margin:10px 0 0 18px;font-size:13px;line-height:1.7;color:var(--ink-3)}
+.shsteps b{color:var(--ink-2);font-weight:600}
+.shwarn{font-size:13px;color:var(--accent-ink);line-height:1.5}
+.shissue{margin-top:14px}
+.shissue > p{font-size:var(--fs-meta);color:var(--ink-2);line-height:1.5}
+.shissue > p b{color:var(--ink);font-weight:600}
+.shlist{list-style:none;margin-top:8px;border:1px solid var(--rule);border-radius:var(--r);max-height:180px;overflow-y:auto}
+.shlist li{
+  display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--rule);
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-code);
+}
+.shlist li:last-child{border-bottom:0}
+.shlist li span{color:var(--ink-3);white-space:nowrap}
+.shlist li code{font-family:inherit;overflow-wrap:anywhere}
+
+/* locked / read-only fields in the editor */
+.f input[readonly]{background:transparent;border-style:dashed;color:var(--ink-2);cursor:default}
+.f input[readonly]:focus{border-color:var(--rule-2);background:transparent}
+.sheetnote{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  margin:10px 0 14px;padding:10px 12px;border-radius:var(--r);background:var(--paper-2);
+  font-size:13px;line-height:1.55;color:var(--ink-2);
+}
+
+/* a sync redraw should not replay the entrance animations */
+.still,.still *{animation:none !important}
+
+/* editor */
+#e_stock{scroll-margin-top:84px}   /* clear the sticky modal header when Edit numbers jumps here */
+.sgrid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+.sgrid.three{grid-template-columns:repeat(3,1fr)}
+.sgrid.four{grid-template-columns:repeat(4,1fr)}
+.sgrid.five{grid-template-columns:repeat(5,1fr)}
+.sgrid .f label{display:flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:.06em}
+.sgrid .f label i{width:9px;height:9px;border-radius:2px;background:var(--sw);flex:none}
+.sgrid .f input{font-family:'Azeret Mono',monospace;font-size:var(--fs-name);font-variant-numeric:tabular-nums;padding:10px 11px}
+.ssub{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:20px 0 10px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+}
+.ssub em{font-style:normal;text-transform:none;letter-spacing:0;font-family:'Archivo',sans-serif;font-size:13px}
+.scalc{font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.scalc.left{color:var(--good)}
+.scalc.over{color:var(--accent-ink)}
+.scalc.short{color:var(--c-hold)}
+.scalc.out,.scalc.none{color:var(--ink-3)}
+
+@media (prefers-reduced-motion: reduce){
+  .pip,.sbar .fill{animation:none}
+}
+
+/* ---------- modal ---------- */
+.scrim{
+  position:fixed;inset:0;z-index:40;background:rgba(5,10,30,.5);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:24px;animation:fade .2s ease both;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--paper);border:1px solid var(--rule-2);border-radius:5px;box-shadow:var(--shadow);
+  width:min(680px,100%);max-height:88vh;overflow-y:auto;animation:pop .28s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.mhead{
+  position:sticky;top:0;background:var(--paper);z-index:2;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:20px 26px 15px;border-bottom:1px solid var(--rule);
+}
+.mhead h2{font-family:var(--font-cond);font-weight:800;font-size:28px;text-transform:uppercase;letter-spacing:.005em}
+.mhead h2 em{font-style:normal;color:var(--accent-ink)}
+.mbody{padding:24px 26px 28px}
+.mfoot{
+  position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--rule);
+  padding:14px 26px;display:flex;justify-content:space-between;gap:10px;align-items:center;
+}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.f{display:flex;flex-direction:column;gap:7px}
+.f.full{grid-column:1/-1}
+.f label{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+}
+.f input,.f select,.f textarea{
+  background:var(--paper-2);border:1px solid var(--rule-2);border-radius:var(--r);
+  padding:11px 12px;font-size:var(--fs-body);outline:0;transition:.14s;width:100%;
+}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--accent);background:var(--paper)}
+.f input.mono{font-family:'Azeret Mono',monospace;font-size:var(--fs-meta)}
+.f .hint{font-size:13px;color:var(--ink-3);line-height:1.55}
+.f textarea{resize:vertical;min-height:84px;line-height:1.55}
+
+.drop{
+  border:1px dashed var(--rule-2);border-radius:var(--r);padding:20px;text-align:center;
+  background:var(--paper-2);transition:.16s;cursor:pointer;
+}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{font-size:var(--fs-meta);color:var(--ink-2)}
+.drop small{display:block;margin-top:6px;font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);color:var(--ink-3)}
+
+.plink{
+  display:grid;grid-template-columns:24px 1fr 40px;gap:10px;align-items:start;margin-bottom:12px;
+}
+.plink .pnum{font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);color:var(--ink-3);text-align:right;padding-top:11px}
+.plink .pfields{display:flex;flex-direction:column;gap:7px;min-width:0}
+.plink input{
+  background:var(--paper-2);border:1px solid var(--rule-2);border-radius:var(--r);padding:10px 11px;width:100%;outline:0;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-code);
+}
+.plink input.ptitlein{font-family:'Archivo',sans-serif;font-size:var(--fs-body);font-weight:500}
+.plink input:focus{border-color:var(--accent);background:var(--paper)}
+.plink input.bad{border-color:var(--accent)}
+.plink button{
+  border:1px solid var(--rule-2);border-radius:var(--r);height:40px;color:var(--ink-3);font-size:17px;line-height:1;
+  align-self:start;margin-top:1px;
+}
+.plink button:hover{border-color:var(--accent);color:var(--accent-ink)}
+.linkwarn{font-size:13px;color:var(--accent-ink);line-height:1.5;margin:2px 0 10px 34px}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--paper);padding:12px 20px;border-radius:100px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  box-shadow:var(--shadow);animation:tin .3s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes tin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+.dirtybar{
+  display:flex;align-items:center;gap:12px;justify-content:space-between;
+  padding:11px 28px;background:var(--accent-soft);border-bottom:1px solid var(--rule);
+  font-size:var(--fs-meta);color:var(--ink);
+}
+.dirtybar b{font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
+
+.lightbox{padding:28px;cursor:zoom-out}
+.lightbox img{
+  max-width:100%;max-height:calc(100vh - 56px);object-fit:contain;display:block;
+  border-radius:5px;box-shadow:0 30px 80px -30px rgba(0,0,0,.8);animation:pop .28s cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* ---------- desktop: narrow list, wide viewer ---------- */
+@media (min-width:981px){
+  /* list rows stack the tags under the name so a narrow column still reads */
+  .listhead{padding:12px 18px}
+  .row{
+    grid-template-columns:64px minmax(0,1fr);
+    grid-template-areas:"thumb main" "thumb tags";
+    column-gap:13px;row-gap:7px;padding:12px 18px;
+  }
+  .row .idx{display:none}
+  .row .thumb{grid-area:thumb;width:64px;height:48px;align-self:center}
+  .row .rowmain{grid-area:main;align-self:end}
+  .row .rowtags{grid-area:tags;align-self:start;flex-wrap:wrap;gap:6px}
+  .rowname{font-size:15px}
+  .rowcode{font-size:12px;margin-top:2px}
+
+  /* viewer: the photo gets its own column and sticks while you scroll,
+     name + stock + posts stack beside it so the stock count sits above the fold.
+     The photo column never grows taller than the pane can show (4:5 card). */
+  .dwrap{
+    display:grid;
+    grid-template-columns:min(clamp(180px,24%,260px), calc((100vh - 300px) * .8)) minmax(0,1fr);
+    grid-template-areas:"photo ident" "photo main";
+    grid-template-rows:auto 1fr;
+    column-gap:30px;align-items:start;padding:28px 30px 64px;
+  }
+  .dside{display:contents}
+  .dphoto{
+    grid-area:photo;position:sticky;top:28px;
+    height:auto;aspect-ratio:4/5;
+    border:1px solid var(--rule);border-radius:4px;box-shadow:var(--shadow);
+  }
+  .dident{grid-area:ident;padding:4px 0 0}
+  .dname{font-size:clamp(26px,2.3vw,34px)}
+  .dident .sect{margin-top:24px}
+  .dmain{grid-area:main;padding:0}
+}
+
+/* ---------- 1440 and up: two columns, photo + identity | stock + posts ---------- */
+@media (min-width:1440px){
+  :root{--list:clamp(380px, 25vw, 460px)}
+  .row{
+    grid-template-columns:40px 72px minmax(0,1fr);
+    grid-template-areas:"idx thumb main" "idx thumb tags";
+    padding-left:0;
+  }
+  .row .idx{display:block;grid-area:idx;align-self:center;padding-left:14px}
+  .row .thumb{width:72px;height:54px}
+  .rowname{font-size:var(--fs-name)}
+  .rowcode{font-size:var(--fs-code)}
+
+  /* photo kept small so the details get the width, capped so a 2560 screen does not stretch the viewer thin */
+  .dwrap{
+    grid-template-columns:min(clamp(260px,28%,380px), calc((100vh - 300px) * .8)) minmax(0,1fr);
+    column-gap:44px;max-width:1800px;margin:0 auto;padding:32px 44px 72px;
+  }
+  .dphoto{top:32px}
+  .dident{padding-top:6px}
+  .dname{font-size:clamp(32px,2.2vw,42px)}
+  .dmeta{margin-top:18px}
+}
+@container (min-width:560px){ .shero .big{font-size:92px} }
+
+/* phone + tablet: the whole page scrolls (header and search scroll away, the results bar sticks),
+   and an item opens as a full-screen sheet over the list in both views (see .as-drawer) */
+@media (max-width:980px){
+  html,body{height:auto}
+  body{overflow:visible}
+  body.lock{overflow:hidden}
+  .app{height:auto;min-height:100vh}
+  .panes{display:block}
+  .listpane{width:100%;border-right:0;overflow:visible}
+  .searchwrap,.listhead,.row,.dirtybar{padding-left:18px;padding-right:18px}
+
+  /* header: brand, then stats + sheet on one line, then the four tool buttons on one line */
+  .topbar{flex-wrap:wrap;gap:10px;padding:12px 18px 14px}
+  .brand{gap:10px;width:100%}
+  .brand .logo{width:40px;height:40px}
+  .brand .kicker{font-size:10px;letter-spacing:.12em}
+  .brand h1{font-size:20px}
+  .topmeta{width:100%;flex-wrap:wrap;gap:10px;padding-bottom:0}
+  .stat{display:flex;align-items:baseline;gap:5px;text-align:left}
+  .stat[hidden]{display:none}
+  .stat b{display:inline;font-size:17px}
+  .stat span{display:inline;margin-top:0;white-space:nowrap}
+  .syncbox{margin-left:auto}
+  .syncpill{padding:7px 9px}
+  .syncref{padding:7px 10px}
+  .toolbtns{width:100%;display:grid;grid-template-columns:auto 1fr 1fr 1.3fr;gap:6px;padding-bottom:0}
+  .tbtn{padding:8px 8px;text-align:center}
+  .dacts .tbtn{padding:9px 12px}
+
+  .searchwrap{padding-top:14px}
+  .searchrow{gap:12px}
+  #q{font-size:22px}
+  .filters{padding:10px 0 11px}
+  .listhead{gap:8px;padding-top:9px;padding-bottom:9px}
+  .listhead #resultCount{white-space:nowrap}
+  /* phone keyboards zoom into any field under 16px */
+  .f input,.f select,.f textarea,.f input.mono,.plink input,.plink input.ptitlein,.sgrid .f input{font-size:16px}
+  .row{grid-template-columns:56px 1fr auto;gap:12px;padding-left:18px}
+  .row .idx{display:none}
+  .thumb{width:56px;height:42px}
+  .rowtags{flex-direction:column;align-items:flex-end;gap:6px}
+  .fgrid{grid-template-columns:1fr}
+  .sgrid.three,.sgrid.four,.sgrid.five{grid-template-columns:repeat(2,1fr)}
+  .plink{grid-template-columns:1fr 40px}
+  .plink .pnum{display:none}
+
+}
+
+/* ---------- view toggle: list (index + viewer) or grid (cards + drawer) ---------- */
+.listhead #activeFilters{flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+.viewtog{display:flex;flex:none;border:1px solid var(--rule-2);border-radius:var(--r);overflow:hidden}
+.viewtog button{
+  display:flex;align-items:center;gap:6px;padding:6px 9px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;
+  color:var(--ink-3);transition:.14s ease;
+}
+.viewtog button + button{border-left:1px solid var(--rule-2)}
+.viewtog button:hover{color:var(--ink);background:var(--paper-2)}
+.viewtog button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.viewtog svg{width:12px;height:12px;display:block;fill:currentColor}
+.sizetog{display:none;margin-right:8px}
+.sizetog button{padding:6px 8px;font-weight:600}
+.v-grid .sizetog{display:flex}
+
+/* grid: the list pane takes the whole width, cards flow in columns */
+.v-grid .listpane{width:100%;border-right:0}
+.v-grid .listhead{padding:12px 28px}
+.v-grid #list{
+  --card:clamp(150px, 13vw, 200px);
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card),1fr));
+  gap:18px 16px;padding:20px 28px 48px;align-items:start;
+}
+.v-grid #list > .empty{grid-column:1/-1}
+/* S packs the most cards per screen (less scrolling), L is for checking photos */
+.v-grid #list[data-size="s"]{--card:clamp(124px, 9vw, 150px);gap:14px 12px}
+.v-grid #list[data-size="l"]{--card:clamp(200px, 17vw, 270px);gap:22px 20px}
+#list[data-size="s"] .cbody{padding:8px 9px 9px}
+#list[data-size="s"] .card .rowname{font-size:13px}
+#list[data-size="s"] .ctags{margin-top:4px}
+#list[data-size="l"] .card .rowname{font-size:var(--fs-name)}
+#list[data-size="l"] .card .rowcode{font-size:var(--fs-ui)}
+
+.card{
+  display:flex;flex-direction:column;text-align:left;width:100%;min-width:0;position:relative;
+  background:var(--paper);border:1px solid var(--rule);border-radius:4px;overflow:hidden;
+  transition:border-color .16s ease, box-shadow .2s ease, transform .2s cubic-bezier(.2,.8,.2,1);
+  animation:rowin .3s cubic-bezier(.2,.8,.2,1) both;
+}
+.card:hover{border-color:var(--rule-2);box-shadow:var(--shadow);transform:translateY(-2px)}
+.card:focus-visible{outline:2px solid var(--c-hold);outline-offset:2px}
+.cphoto{
+  display:grid;place-items:center;position:relative;aspect-ratio:4/5;width:100%;
+  background:var(--paper-3);border-bottom:1px solid var(--rule);overflow:hidden;
+}
+.cphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.card:hover .cphoto img{transform:scale(1.04)}
+.cphoto .ph{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+  background:repeating-linear-gradient(135deg,transparent 0 9px,var(--rule) 9px 10px);
+}
+.cidx{
+  position:absolute;left:8px;top:8px;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--ink-2);background:var(--paper);border:1px solid var(--rule);border-radius:100px;padding:2px 7px;
+}
+.cphoto .linkdot{position:absolute;right:9px;top:9px;box-shadow:0 0 0 2px var(--paper)}
+.cbody{display:flex;flex-direction:column;gap:3px;padding:10px 11px 11px;min-width:0;flex:1}
+.card .rowcode{font-size:var(--fs-cap);margin-top:0;letter-spacing:.02em}
+.card .rowname{font-size:14px;font-weight:600;line-height:1.3}
+.ctags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.ctags .tag,.ctags .stag{padding:3px 7px}
+
+/* the open card: orange frame + the ribbon VIEWING pill over the number */
+.card[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent), var(--shadow)}
+.card[aria-current="true"] .cidx{color:#fff;background:var(--ribbon);border-color:transparent}
+.card[aria-current="true"] .cidx::before{content:'\25B6\00a0 Viewing\00a0\00b7\00a0'}
+
+/* grid (and any width under 981): the viewer slides in from the right, a strip of grid stays visible for context */
+.dbar{display:none}
+.drawerscrim{display:none}
+.as-drawer .detail{
+  position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(1320px, calc(100vw - 96px));
+  border-left:1px solid var(--rule-2);box-shadow:-30px 0 80px -30px rgba(5,10,30,.55);
+  overscroll-behavior:contain;
+  transform:translateX(104%);visibility:hidden;
+  transition:transform .34s cubic-bezier(.2,.8,.2,1), visibility 0s linear .34s;
+}
+.as-drawer.drawer-open .detail{transform:none;visibility:visible;transition:transform .34s cubic-bezier(.2,.8,.2,1)}
+.as-drawer .drawerscrim{
+  display:block;position:fixed;inset:0;z-index:29;background:rgba(5,10,30,.38);
+  opacity:0;pointer-events:none;transition:opacity .25s ease;
+}
+.as-drawer.drawer-open .drawerscrim{opacity:1;pointer-events:auto}
+.as-drawer .dbar{
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;
+  padding:10px 18px;background:var(--paper);border-bottom:1px solid var(--rule);
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
+}
+.dbar .dpos{font-variant-numeric:tabular-nums;margin-right:auto;padding-left:4px}
+.dbar button{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--rule-2);border-radius:var(--r);padding:7px 11px;color:var(--ink-2);transition:.14s ease;
+}
+.dbar button:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--paper-2)}
+.dbar button:disabled{opacity:.35;cursor:default}
+.dbar .dclose{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.dbar .dclose:hover{background:var(--fire)!important;border-color:var(--accent)!important;color:var(--on-accent)!important}
+
+@media (max-width:980px){
+  .v-grid .listhead{padding:9px 18px}
+  .v-grid #list,.v-grid #list[data-size]{--card:148px;gap:12px;padding:14px 18px 40px}
+  .v-grid #list[data-size="s"]{--card:112px}
+  .v-grid #list[data-size="l"]{--card:100%}
+  .as-drawer .detail{width:100%;border-left:0;border-top:0}
+  .viewtog button span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.as-drawer .detail,.drawerscrim,.cphoto img{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo" src="assets/mz-garage-logo.png" alt="MZ Garage, Toys and Collectibles">
+      <div class="btext">
+        <span class="kicker">MZ Garage · Toys &amp; Collectibles</span>
+        <h1><em>Hot Wheels</em> Item Inventory System</h1>
+      </div>
+    </div>
+    <div class="topmeta">
+      <div class="stat"><b id="statTotal">0</b><span>Items</span></div>
+      <div class="stat good"><b id="statLinked">0</b><span>With post</span></div>
+      <div class="stat warn" id="statOverWrap" hidden><b id="statOver">0</b><span>Short</span></div>
+      <div class="syncbox sync-off" id="syncbox">
+        <button class="syncpill" id="syncpill" title="Google Sheet connection"><i class="syncdot"></i><span id="synctext">Connect sheet</span></button>
+        <button class="syncref" id="syncref" title="Refresh from the sheet now"><span>↻</span></button>
+      </div>
+      <div class="toolbtns">
+        <button class="tbtn" id="btnTheme" title="Light / dark">◐</button>
+        <button class="tbtn" id="btnImport">Import</button>
+        <button class="tbtn" id="btnExport">Export</button>
+        <button class="tbtn primary" id="btnNew">+ New item</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="dirtybar"></div>
+
+  <div class="searchwrap">
+    <div class="searchrow">
+      <span class="sigil mono">SEARCH</span>
+      <input id="q" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="Type a code, a car, a series...">
+      <button class="clearq mono" id="clearq" hidden>Clear</button>
+    </div>
+    <div class="searchline"></div>
+    <div class="filterrail" id="filterrail">
+      <div class="filters" id="filters"></div>
+    </div>
+  </div>
+
+  <div class="panes">
+    <div class="listpane" id="listpane">
+      <div class="listhead">
+        <span id="resultCount">0 results</span>
+        <span id="activeFilters"></span>
+        <div class="viewtog sizetog" id="sizetog" role="group" aria-label="Card size" title="Card size">
+          <button data-size="s" title="Small cards, most per screen">S</button>
+          <button data-size="m" title="Medium cards">M</button>
+          <button data-size="l" title="Large cards, biggest photos">L</button>
+        </div>
+        <div class="viewtog" id="viewtog" role="group" aria-label="View">
+          <button data-view="list" title="List view (V)"><svg viewBox="0 0 12 12"><rect y="1" width="12" height="2"/><rect y="5" width="12" height="2"/><rect y="9" width="12" height="2"/></svg><span>List</span></button>
+          <button data-view="grid" title="Grid view (V)"><svg viewBox="0 0 12 12"><rect width="5" height="5"/><rect x="7" width="5" height="5"/><rect y="7" width="5" height="5"/><rect x="7" y="7" width="5" height="5"/></svg><span>Grid</span></button>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+    <div class="drawerscrim" id="drawerscrim"></div>
+    <aside class="detail blank" id="detail"></aside>
+  </div>
+
+</div>
+
+<script src="data/items.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STORAGE
+   window.HW_ITEMS = committed seed (data/items.js)
+   An item's post links are plain Facebook URLs: posts: [{url:"..."}]
+   localStorage = working overlay, until you EXPORT a new items.js
+   ============================================================ */
+var LS_KEY = 'hw_item_index_v1';
+if(!window.HW_ITEMS){
+  document.getElementById('list').innerHTML =
+    '<div class="empty"><p>The data file did not load.</p>' +
+    '<span style="display:block;margin-top:12px;line-height:1.9">Keep index.html, /data and /images together in one folder.<br>' +
+    (location.protocol === 'file:' ?
+      'If it still shows nothing, run this in Terminal from this folder,<br>then open http://localhost:8777<br><br>' +
+      '<code style="background:var(--paper-3);padding:4px 8px;border-radius:3px">python3 -m http.server 8777</code>' :
+      'Online: check that data/items.js was uploaded with this page, then reload.') + '</span></div>';
+  return;
+}
+var SEED_ITEMS = (window.HW_ITEMS || []).map(function(x,i){ x._seq = i+1; return x; });
+
+var overlay = load();
+function load(){
+  try { var r = JSON.parse(localStorage.getItem(LS_KEY)); return (r && r.items) ? r : {items:{}, removed:[]}; }
+  catch(e){ return {items:{}, removed:[]}; }
+}
+function persist(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(overlay)); } catch(e){ toast('Storage full - export now'); }
+  state.dirty = Object.keys(overlay.items).length > 0 || (overlay.removed||[]).length > 0;
+  renderDirty();
+}
+
+/* ------------------------------------------------------------
+   POST LINKS
+   An item holds pre-order links only: [{url:"https://facebook.com/..."}]
+   Older records pointed at a post registry ({postId, price}) - fold
+   those old ids back into plain urls so nothing is lost on upgrade.
+   ------------------------------------------------------------ */
+var LEGACY_URL = {};
+[].concat(window.HW_POSTS || [], (overlay && overlay.posts) || []).forEach(function(p){
+  if(p && p.id && p.url) LEGACY_URL[p.id] = p.url;
+});
+var FB_RE = /^https?:\/\/([a-z0-9-]+\.)?(facebook\.com|fb\.com|fb\.me|fb\.watch|m\.me)\//i;
+function normLinks(list){
+  var out = [], seen = {};
+  (list || []).forEach(function(l){
+    var u = typeof l === 'string' ? l : (l ? (l.url || LEGACY_URL[l.postId] || '') : '');
+    u = String(u).trim();
+    if(!u || seen[u]) return;
+    seen[u] = 1;
+    var title = (l && typeof l === 'object' && l.title) ? String(l.title).trim() : '';
+    out.push({url: u, title: title});
+  });
+  return out;
+}
+function splitLinks(text){
+  return String(text || '').split(/[\s,]+/).map(function(x){ return x.trim(); }).filter(Boolean);
+}
+
+/* ------------------------------------------------------------
+   STOCK AND MINERS (v3)
+   it.stock = { arrived, upcoming, paid, paidHold, invoiced, semiPaid, waiting,
+                dropped:{passed, joyjoy, banned, cantPm, deleted} }
+   Blank arrived = not counted yet (unless upcoming is filled, then it is 0).
+   Every other blank counts as 0.
+   Remaining       = arrived - (paid + paidHold + invoiced + semiPaid)   (in hand)
+   After upcoming  = arrived + upcoming - tagged
+   Did not get and Waiting are shown only, never subtracted.
+   ------------------------------------------------------------ */
+var STOCK_TAGS = [
+  {k:'paid',     label:'Paid',      c:'var(--c-paid)'},
+  {k:'paidHold', label:'Paid-hold', c:'var(--c-hold)'},
+  {k:'invoiced', label:'Invoiced',  c:'var(--c-inv)'},
+  {k:'semiPaid', label:'Semi-paid', c:'var(--c-semi)'}
+];
+var DROP_TAGS = [
+  {k:'passed', label:'Passed'}, {k:'joyjoy', label:'Joyjoy'}, {k:'banned', label:'Banned'},
+  {k:'cantPm', label:'Can’t PM'}, {k:'deleted', label:'Deleted mine'}
+];
+var BAL_LABEL = {none:'Not entered', overstock:'Excess stock', shortstock:'Short stock', complete:'Complete'};
+var STATUS_LABEL = {none:'Not counted', over:'Over tagged', short:'Covered by upcoming', out:'All tagged', offer:'Offer to waiting', left:'In stock'};
+
+function num(v){ v = parseInt(v, 10); return isFinite(v) && v > 0 ? v : 0; }
+function stockOf(it){
+  var r = it && it.stock;
+  if(!r) return null;
+  if(r.v === 2) return sheetStockOf(r);
+  var d = r.dropped || {};
+  var s = {
+    arrived: (r.arrived == null || r.arrived === '') ? null : num(r.arrived),
+    upcoming: num(r.upcoming), waiting: num(r.waiting), dropped: {}, tagged: 0, droppedTotal: 0
+  };
+  /* upcoming filled but nothing arrived yet: count arrived as 0 */
+  if(s.arrived == null && s.upcoming) s.arrived = 0;
+  STOCK_TAGS.forEach(function(t){ s[t.k] = num(r[t.k]); s.tagged += s[t.k]; });
+  DROP_TAGS.forEach(function(t){ s.dropped[t.k] = num(d[t.k]); s.droppedTotal += s.dropped[t.k]; });
+  s.remaining = s.arrived == null ? null : s.arrived - s.tagged;
+  s.projected = s.arrived == null ? null : s.arrived + s.upcoming - s.tagged;
+  s.status = s.remaining == null ? 'none'
+           : s.projected < 0 ? 'over'
+           : s.remaining < 0 ? 'short'
+           : s.remaining === 0 ? 'out'
+           : s.waiting > 0 ? 'offer' : 'left';
+  return s;
+}
+/* Dashboard numbers (sheet v5). Uses the sheet's own Remaining, Upcoming and Completion %.
+   A blank column falls back to the same formula the sheet uses.
+   Stock On Hand and Total Orders both 0 = stock not entered yet: no Remaining, miner numbers only.
+   tagged = Collection (Invoiced + Paid), so the list hints and filters follow the sheet. */
+function sheetStockOf(r){
+  function n(k){ return r[k] == null ? 0 : r[k]; }
+  var onHand = n('onHand'), orders = n('orders');
+  var collection = r.collection != null ? r.collection : n('invoiced') + n('paid');
+  var entered = onHand !== 0 || orders !== 0;
+  var upRaw = r.upcoming != null ? r.upcoming : orders - onHand;
+  var s = {
+    sheet:true, entered:entered, jpn:n('jpn'), macnn:n('macnn'), others:n('others'), orders:orders,
+    onHand:onHand, upRaw:upRaw, upcoming:Math.max(0, upRaw),
+    invoiced:n('invoiced'), paid:n('paid'), paidHold:n('paidHold'), semiPaid:n('semiPaid'),
+    collection:collection, noAlloc:n('noAlloc'), other:n('other'), blank:n('blank'),
+    source: r.source != null ? r.source : collection + n('noAlloc'),
+    completion: r.completion != null ? r.completion : (collection ? Math.round(n('paid') / collection * 10000) / 100 : 0),
+    waiting:0, dropped:{}, droppedTotal:0, tagged:collection
+  };
+  s.arrived = entered ? onHand : null;
+  /* stock balance: Total Orders (or Stock On Hand when orders is 0) - Mine Total */
+  s.supply = orders || onHand;
+  s.supplyFrom = orders ? 'ordered' : 'on hand';
+  s.balance = s.supply - s.source;
+  s.bal = !entered ? 'none' : s.balance > 0 ? 'overstock' : s.balance < 0 ? 'shortstock' : 'complete';
+  s.remaining = entered ? (r.remaining != null ? r.remaining : onHand - collection) : null;
+  s.projected = entered ? s.remaining + s.upcoming : null;
+  s.status = !entered ? 'none'
+           : s.projected < 0 ? 'over'
+           : s.remaining < 0 ? 'short'
+           : s.remaining === 0 ? 'out' : 'left';
+  return s;
+}
+
+/* keep only what was typed; null when the whole block is blank */
+function cleanStock(r){
+  if(!r) return null;
+  var out = {dropped:{}}, any = false;
+  function pick(v){
+    if(v == null || v === '') return null;
+    any = true; return num(v);
+  }
+  out.arrived = pick(r.arrived);
+  out.upcoming = pick(r.upcoming);
+  STOCK_TAGS.forEach(function(t){ out[t.k] = pick(r[t.k]); });
+  out.waiting = pick(r.waiting);
+  DROP_TAGS.forEach(function(t){ out.dropped[t.k] = pick((r.dropped || {})[t.k]); });
+  return any ? out : null;
+}
+
+/* ------------------------------------------------------------
+   GOOGLE SHEET (v5, Dashboard tab)
+   The app owns the items. The sheet owns the numbers.
+   Reads the "Dashboard" tab of FOR DISTRIBUTION, published to the web as CSV, matched by Item Code.
+   The app shows the sheet's own math, it does not redo it:
+     Total Orders = JPN + MACNN + Others       Upcoming  = Total Orders - Stock On Hand
+     Collection   = Invoiced + Paid            Remaining = Stock On Hand - Collection
+     Source       = Collection + No Allocation Yet         Completion % = Paid / Collection
+   One number the app adds: Stock balance = Total Orders - Mine Total (Source)
+     (Stock On Hand when Total Orders is 0).  more than 0 = Overstock, less than 0 = Short, 0 = Complete.
+   Paid-hold and Semi-paid are shown, but the sheet does not count them in Collection.
+   Revenue, Cost, Profit and Profit Margin % are never read (money stays out of the app).
+   - Loads on open, every 60 seconds, when the tab gets focus, and on Refresh.
+   - The last good copy stays in this browser for when the internet drops.
+   - Once a sync worked, the sheet always wins: an item not in the sheet has no numbers.
+   - Codes seen in any earlier sync but gone now get "Removed from sheet".
+     The sheet never creates or deletes an item.
+   To set the links for every browser, paste them here. The Connect sheet box
+   (saved in this browser) overrides them.
+   ------------------------------------------------------------ */
+var SHEET_LINKS = {
+  /* File > Share > Publish to web > Dashboard tab > CSV */
+  csv:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_MiAIZm83486x-pMq80hfywZlNafP6l27JtzPmuFB14dt6daXuKEUs0ZPZv3n7A/pub?gid=821570290&single=true&output=csv',
+  /* the normal sheet link you edit in (Dashboard tab open) */
+  edit: 'https://docs.google.com/spreadsheets/d/1BCHfBBz9JZgYGn_7ALc7I9W42BqQH3Rh/edit?gid=821570290#gid=821570290'
+};
+/* v5: the stock shape changed with the Dashboard tab, so an old v4 copy is never reused.
+   The saved links start over too, so a browser that saved the old test sheet picks up the links above. */
+var SHEET_CFG_KEY = 'hw_sheet_cfg_v5', SHEET_CACHE_KEY = 'hw_sheet_cache_v5';
+var SHEET_EVERY = 60000;
+
+/* header text in the sheet -> field in it.stock (header match ignores case and spaces).
+   h = accepted header names, first one found wins. opt = fine if the column is missing. */
+var SHEET_COLS = [
+  {k:'jpn', h:['JPN'], opt:1}, {k:'macnn', h:['MACNN'], opt:1}, {k:'others', h:['Others'], opt:1},
+  {k:'orders', h:['Total Orders']}, {k:'upcoming', h:['Upcoming']},
+  {k:'onHand', h:['Stock On Hand (Input)', 'Stock On Hand']}, {k:'remaining', h:['Remaining Stock']},
+  {k:'completion', h:['Collection Completion %'], opt:1, pct:1},
+  {k:'source', h:['Source Qty']}, {k:'collection', h:['Collection Qty']}, {k:'noAlloc', h:['No Allocation Yet Qty']},
+  {k:'invoiced', h:['INVOICED Qty']}, {k:'paid', h:['Paid Qty']}, {k:'paidHold', h:['PAID-HOLD Qty']},
+  {k:'semiPaid', h:['SEMI-PAID Qty']}, {k:'other', h:['Other Qty'], opt:1}, {k:'blank', h:['Blank Qty'], opt:1}
+];
+
+var sheetCfg = (function(){
+  var c = null;
+  try { c = JSON.parse(localStorage.getItem(SHEET_CFG_KEY)); } catch(e){}
+  /* off = disconnected on purpose in this browser, so the links above do not come back */
+  if(c && c.csv && !c.edit && c.csv === SHEET_LINKS.csv) c.edit = SHEET_LINKS.edit || '';   /* same sheet, fill the missing edit link */
+  return (c && (c.csv || c.off)) ? c : {csv: SHEET_LINKS.csv || '', edit: SHEET_LINKS.edit || ''};
+})();
+var sheetCache = (function(){
+  try {
+    var c = JSON.parse(localStorage.getItem(SHEET_CACHE_KEY));
+    return (c && c.rows && c.url === sheetCfg.csv) ? c : null;
+  } catch(e){ return null; }
+})();
+var SYNC = {busy:false, err:'', lastTry:0};
+
+function saveSheetCfg(){
+  try { localStorage.setItem(SHEET_CFG_KEY, JSON.stringify(sheetCfg)); } catch(e){}
+}
+function saveSheetCache(){
+  try {
+    if(sheetCache) localStorage.setItem(SHEET_CACHE_KEY, JSON.stringify(sheetCache));
+    else localStorage.removeItem(SHEET_CACHE_KEY);
+  } catch(e){}
+}
+/* the sheet drives the numbers once a link is set and one sync has landed */
+function sheetOn(){ return !!(sheetCfg.csv && sheetCache); }
+
+function normHead(s){ return String(s == null ? '' : s).replace(/[‘’]/g, '\'').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function normCode(s){ return String(s == null ? '' : s).trim().toUpperCase(); }
+
+/* plain CSV reader: quotes, commas and line breaks inside quotes */
+function parseCSV(text){
+  var rows = [], row = [], cell = '', q = false, i = 0, c;
+  text = String(text).replace(/^﻿/, '');
+  for(; i < text.length; i++){
+    c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if(c === '"') q = true;
+    else if(c === ','){ row.push(cell); cell = ''; }
+    else if(c === '\n' || c === '\r'){
+      if(c === '\r' && text[i+1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += c;
+  }
+  if(cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+function hashText(s){
+  var h = 5381;
+  for(var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return String(h);
+}
+
+/* CSV text -> {rows:{CODE:{row, stock}}, count, dups, bad, missing} */
+function parseSheet(text){
+  if(/^\s*</.test(text)) throw new Error('That link opens a web page, not a CSV. Pick "Comma-separated values (.csv)" when you publish.');
+  var grid = parseCSV(text), head = -1, idx = {}, codeCol = -1;
+  for(var r = 0; r < Math.min(grid.length, 10) && head < 0; r++){
+    for(var c = 0; c < grid[r].length; c++) if(normHead(grid[r][c]) === 'item code'){ head = r; codeCol = c; break; }
+  }
+  if(head < 0) throw new Error('No "Item Code" column found. Publish the Dashboard tab, not another tab.');
+  grid[head].forEach(function(h, c){ var n = normHead(h); if(n && idx[n] == null) idx[n] = c; });
+  var colAt = {}, missing = [];
+  SHEET_COLS.forEach(function(col){
+    for(var j = 0; j < col.h.length; j++){
+      var ci = idx[normHead(col.h[j])];
+      if(ci != null){ colAt[col.k] = ci; return; }
+    }
+    if(!col.opt) missing.push(col.h[0]);
+  });
+
+  var rows = {}, dups = [], bad = [], count = 0;
+  for(r = head + 1; r < grid.length; r++){
+    var line = grid[r], code = normCode(line[codeCol]);
+    if(!code) continue;
+    var sheetRow = r + 1;   /* the CSV starts at row 1 of the tab */
+    count++;
+    if(rows[code]){ dups.push({code:code, row:sheetRow, first:rows[code].row}); continue; }
+    /* numbers keep their sign: the sheet's Remaining and Upcoming can go below 0 */
+    var raw = {};
+    SHEET_COLS.forEach(function(col){
+      var ci = colAt[col.k];
+      var v = ci == null ? '' : String(line[ci] == null ? '' : line[ci]).trim().replace(/[,\s]/g, '');
+      if(col.pct) v = v.replace(/%$/, '');
+      v = v.replace(/^[\u2212(](.*?)\)?$/, '-$1');   /* −5 or (5) = -5 */
+      if(v !== '' && !/^-?\d+(\.\d+)?$/.test(v)){
+        if(bad.length < 50) bad.push({code:code, row:sheetRow, col:col.h[0], val:v});
+        v = '';
+      }
+      raw[col.k] = v === '' ? null : col.pct ? Math.round(+v * 100) / 100 : Math.round(+v);
+    });
+    rows[code] = {row: sheetRow, stock: sheetStock(raw)};
+  }
+  if(!count) throw new Error('The sheet has no item rows yet.');
+  return {rows:rows, count:count, dups:dups, bad:bad, missing:missing, hash:hashText(text)};
+}
+/* The Dashboard formulas give 0, not blank. A row where every number is 0
+   means "no numbers yet", same as a blank row. v:2 marks the Dashboard shape. */
+function sheetStock(raw){
+  var any = SHEET_COLS.some(function(col){ return raw[col.k]; });
+  if(!any) return null;
+  var st = {v:2};
+  SHEET_COLS.forEach(function(col){ st[col.k] = raw[col.k]; });
+  return st;
+}
+
+function syncSheet(manual){
+  if(!sheetCfg.csv){ if(manual) openSheetModal(); return; }
+  if(SYNC.busy) return;
+  SYNC.busy = true; SYNC.lastTry = Date.now(); renderSync();
+  var url = sheetCfg.csv, wasErr = SYNC.err;
+  var bust = url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + Date.now();
+  fetch(bust, {cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error(r.status === 404 ? 'The CSV link is not found (404). Publish the tab again and paste the new link.'
+                                               : 'The sheet answered ' + r.status + '. Try again in a minute.');
+    return r.text();
+  }).then(function(text){
+    if(url !== sheetCfg.csv) return;   /* the link changed while this was loading */
+    var p = parseSheet(text);
+    var same = sheetCache && sheetCache.url === url;
+    var changed = !same || sheetCache.hash !== p.hash;
+    var seen = same ? (sheetCache.seen || {}) : {};
+    Object.keys(p.rows).forEach(function(c){ seen[c] = 1; });
+    sheetCache = {url:url, at:Date.now(), rows:p.rows, count:p.count, dups:p.dups, bad:p.bad,
+                  missing:p.missing, hash:p.hash, seen:seen};
+    saveSheetCache();
+    SYNC.err = '';
+    if(changed || wasErr) redrawFromSync(); else renderSync();
+    if(manual) toast('Synced with the sheet');
+  }).catch(function(err){
+    var raw = err && err.message ? String(err.message) : '';
+    /* a page opened by double-click (file://) can be blocked from reading web links in some browsers */
+    SYNC.err = (raw && !/fetch|network|load failed|access control|cors/i.test(raw))
+      ? raw
+      : navigator.onLine === false ? 'No internet.'
+      : location.protocol === 'file:'
+        ? 'Google blocks the sheet when the app is opened by double-click. Open it through the local server (see README) or the Netlify link.'
+        : 'Could not reach the sheet. Check the CSV link or the internet.' + (raw ? ' (' + raw + ')' : '');
+    if(!wasErr) redrawFromSync(); else renderSync();
+    if(manual) toast('Sync failed');
+  }).then(function(){
+    SYNC.busy = false; renderSync();
+    var m = document.querySelector('[data-sheetmodal]');
+    if(m) drawSheetState(m);
+  });
+}
+
+/* redraw after a sync without the entrance animations or losing your place */
+var quiet = false;
+function redrawFromSync(){
+  var lp = $('#listpane'), dp = $('#detail');
+  var ls = lp.scrollTop, ds = dp.scrollTop;
+  rebuild();
+  quiet = true; render(); quiet = false;
+  lp.scrollTop = ls; dp.scrollTop = ds;
+}
+
+function sheetTime(t){
+  if(!t) return '';
+  var d = new Date(t), now = new Date();
+  var time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  return d.toDateString() === now.toDateString() ? time
+       : d.toLocaleDateString([], {month:'short', day:'numeric'}) + ', ' + time;
+}
+/* things in the sheet worth a look: codes the app does not know (typos), repeats, text in number cells */
+function sheetIssues(){
+  var out = {unknown:[], dups:[], bad:[], missing:[], total:0};
+  if(!sheetCache) return out;
+  var known = {};
+  ITEMS.forEach(function(it){ known[normCode(it.code)] = 1; });
+  Object.keys(sheetCache.rows).forEach(function(c){
+    if(!known[c]) out.unknown.push({code:c, row:sheetCache.rows[c].row});
+  });
+  out.unknown.sort(function(a,b){ return a.row - b.row; });
+  out.dups = sheetCache.dups || []; out.bad = sheetCache.bad || []; out.missing = sheetCache.missing || [];
+  out.total = out.unknown.length + out.dups.length + out.bad.length + out.missing.length;
+  return out;
+}
+function gidOf(u){ var m = String(u || '').match(/[?#&]gid=(\d+)/); return m ? m[1] : null; }
+/* the sheet link, jumped to the item's row when there is one */
+function sheetEditUrl(row){
+  var base = sheetCfg.edit.split('#')[0];
+  var gid = gidOf(sheetCfg.csv) || gidOf(sheetCfg.edit), h = [];
+  if(gid) h.push('gid=' + gid);
+  if(row) h.push('range=A' + row);
+  return base + (h.length ? '#' + h.join('&') : '');
+}
+
+var ITEMS = [];
+function rebuild(){
+  var byCode = {};
+  SEED_ITEMS.forEach(function(it){ byCode[it.code] = Object.assign({}, it); });
+  Object.keys(overlay.items).forEach(function(c){
+    var o = overlay.items[c];
+    byCode[c] = Object.assign(byCode[c] || {_seq: 9000 + Object.keys(byCode).length}, o);
+  });
+  (overlay.removed||[]).forEach(function(c){ delete byCode[c]; });
+  ITEMS = Object.keys(byCode).map(function(c){ return byCode[c]; });
+  var on = sheetOn();
+  ITEMS.forEach(function(it){
+    it.posts = normLinks(it.posts);
+    /* _appStock = the numbers saved in the app. it.stock = what shows (the sheet wins once connected) */
+    it._appStock = it.stock || null;
+    it._inSheet = false; it._sheetRow = null; it._removed = false;
+    if(!on) return;
+    var row = sheetCache.rows[normCode(it.code)];
+    it.stock = row ? row.stock : null;
+    it._inSheet = !!row;
+    it._sheetRow = row ? row.row : null;
+    it._removed = !row && !!(sheetCache.seen || {})[normCode(it.code)];
+  });
+}
+rebuild();
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var state = {
+  q:'', series:null, pack:null, marque:null, flag:null,
+  sort:'new', selected:null, dirty:false, view:'grid'
+};
+state.size = 'm';
+try{
+  if(localStorage.getItem('hw_idx_view') === 'list') state.view = 'list';
+  var sz = localStorage.getItem('hw_idx_card');
+  if(sz === 's' || sz === 'l') state.size = sz;
+}catch(e){}
+/* After Export + redeploy, the browser still holds the same edits. Drop the ones the
+   deployed items.js already has, so they don't hide newer changes made elsewhere. */
+(function pruneOverlay(){
+  var seed = {};
+  SEED_ITEMS.forEach(function(s){ seed[s.code] = s; });
+  function shape(x){
+    return JSON.stringify([x.name, x.series, x.sub||null, !!x.promo, x.pack, x.marques||[], x.blvd||null,
+      x.image||'', normLinks(x.posts), x.notes||'', !!x.archived, cleanStock(x.stock)]);
+  }
+  var before = JSON.stringify(overlay);
+  Object.keys(overlay.items).forEach(function(c){
+    if(seed[c] && shape(seed[c]) === shape(overlay.items[c])) delete overlay.items[c];
+  });
+  overlay.removed = (overlay.removed||[]).filter(function(c){ return seed[c]; });
+  if(JSON.stringify(overlay) !== before){
+    try { localStorage.setItem(LS_KEY, JSON.stringify(overlay)); } catch(e){}
+  }
+})();
+state.dirty = Object.keys(overlay.items).length > 0 || overlay.removed.length > 0;
+
+var $ = function(s){ return document.querySelector(s); };
+var esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+function haystack(it){
+  if(it._hay) return it._hay;
+  var pl = (it.posts||[]).map(function(p){ return p.url || ''; }).join(' ');
+  it._hay = (it.code+' '+it.name+' '+(it.series||'')+' '+(it.sub||'')+' '+(it.pack||'')+' '+
+             (it.marques||[]).join(' ')+' '+(it.notes||'')+' '+pl).toLowerCase();
+  return it._hay;
+}
+function score(it, terms){
+  var code = it.code.toLowerCase(), name = it.name.toLowerCase(), hay = haystack(it), s = 0;
+  for(var i=0;i<terms.length;i++){
+    var t = terms[i];
+    if(hay.indexOf(t) === -1) return -1;
+    if(code === t) s += 1000;
+    else if(code.indexOf(t) === 0) s += 300;
+    else if(code.indexOf(t) > -1) s += 120;
+    if(name.indexOf(t) === 0) s += 200;
+    else if(name.indexOf(' '+t) > -1) s += 90;
+    else if(name.indexOf(t) > -1) s += 50;
+  }
+  if((it.posts||[]).length) s += 15;
+  if(hasPhoto(it)) s += 5;
+  return s;
+}
+function filtered(){
+  var terms = state.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  var out = [];
+  for(var i=0;i<ITEMS.length;i++){
+    var it = ITEMS[i];
+    if(state.series && it.series !== state.series) continue;
+    if(state.pack && it.pack !== state.pack) continue;
+    if(state.marque && (it.marques||[]).indexOf(state.marque) === -1) continue;
+    if(state.flag === 'todo' && (it.posts||[]).length) continue;
+    if(state.flag === 'done' && !(it.posts||[]).length) continue;
+    /* still checking counts as has-photo, so the list never shows a false miss */
+    if(state.flag === 'nophoto' && hasPhoto(it) !== false) continue;
+    if(state.flag === 'promo' && !it.promo) continue;
+    if(state.flag === 'removed' && !it._removed) continue;
+    if(BAL_LABEL[state.flag] && state.flag !== 'none'){
+      var so = stockOf(it);
+      if(!so || so.bal !== state.flag) continue;
+    }
+    if(!terms.length){
+      if(it.archived && !state.q) { /* keep but sink */ }
+      out.push({it:it, s:0});
+    } else {
+      var s = score(it, terms);
+      if(s >= 0) out.push({it:it, s: it.archived ? s - 100000 : s});
+    }
+  }
+  if(terms.length){
+    out.sort(function(a,b){ return b.s - a.s || b.it._seq - a.it._seq; });
+  } else if(state.sort === 'new'){
+    out.sort(function(a,b){ return b.it._seq - a.it._seq; });
+  } else if(state.sort === 'old'){
+    out.sort(function(a,b){ return a.it._seq - b.it._seq; });
+  } else if(state.sort === 'az'){
+    out.sort(function(a,b){ return a.it.name.localeCompare(b.it.name); });
+  }
+  return out.map(function(x){ return x.it; });
+}
+
+/* ============================================================
+   RENDER - filters
+   ============================================================ */
+function uniqCount(key){
+  var m = {};
+  ITEMS.forEach(function(it){
+    if(key === 'marques'){ (it.marques||[]).forEach(function(v){ m[v]=(m[v]||0)+1; }); }
+    else { var v = it[key]; if(v) m[v]=(m[v]||0)+1; }
+  });
+  return Object.keys(m).sort(function(a,b){ return m[b]-m[a] || a.localeCompare(b); })
+          .map(function(k){ return {k:k, n:m[k]}; });
+}
+function renderFilters(){
+  var f = $('#filters'), h = '', keepScroll = f.scrollLeft;
+  h += chip('flag','todo','Needs post link', true);
+  var noPhotoN = ITEMS.filter(function(i){ return hasPhoto(i) === false; }).length;
+  h += chip('flag','nophoto', photosChecking() ? 'No photo …' : 'No photo '+noPhotoN, true);
+  h += chip('flag','done','Ready', true);
+  var balN = {overstock:0, shortstock:0, complete:0};
+  ITEMS.forEach(function(i){ var so = stockOf(i); if(so && balN[so.bal] != null) balN[so.bal]++; });
+  ['shortstock', 'overstock', 'complete'].forEach(function(k){ h += chip('flag', k, BAL_LABEL[k]+' '+balN[k], true); });
+  var goneN = ITEMS.filter(function(i){ return i._removed; }).length;
+  if(goneN || state.flag === 'removed') h += chip('flag','removed','Removed from sheet '+goneN, true);
+  h += '<span class="chipdiv"></span>';
+  h += '<select class="sortsel" id="sortsel">' +
+       opt('new','Newest first') + opt('old','Oldest first') + opt('az','A - Z') + '</select>';
+  h += '<span class="chipdiv"></span>';
+  uniqCount('series').slice(0,14).forEach(function(o){ h += chip('series',o.k,o.k+' '+o.n); });
+  h += '<span class="chipdiv"></span>';
+  uniqCount('pack').forEach(function(o){ h += chip('pack',o.k,o.k); });
+  h += '<span class="chipdiv"></span>';
+  uniqCount('marques').slice(0,16).forEach(function(o){ h += chip('marque',o.k,o.k+' '+o.n); });
+  f.innerHTML = h;
+  f.scrollLeft = keepScroll;
+  syncFilterRail();
+  $('#sortsel').value = state.sort;
+  $('#sortsel').onchange = function(){ state.sort = this.value; render(); };
+  function opt(v,l){ return '<option value="'+v+'">'+l+'</option>'; }
+}
+function chip(group, val, label, isFlag){
+  var on = state[group] === val;
+  return '<button class="chip'+(isFlag?' flag':'')+'" data-g="'+group+'" data-v="'+esc(val)+
+         '" aria-pressed="'+on+'">'+esc(label)+'</button>';
+}
+document.addEventListener('click', function(e){
+  var c = e.target.closest('.chip');
+  if(!c) return;
+  var g = c.dataset.g, v = c.dataset.v;
+  state[g] = (state[g] === v) ? null : v;
+  render();
+});
+
+/* ============================================================
+   FILTER RAIL - drag to scroll
+   ============================================================ */
+var syncFilterRail = function(){};
+(function(){
+  var rail = $('#filterrail'), strip = $('#filters');
+  if(!rail || !strip) return;
+
+  syncFilterRail = function(){
+    var max = strip.scrollWidth - strip.clientWidth;
+    rail.classList.toggle('spill-l', max > 1 && strip.scrollLeft > 1);
+    rail.classList.toggle('spill-r', max > 1 && strip.scrollLeft < max - 1);
+  };
+
+  strip.addEventListener('scroll', syncFilterRail, {passive:true});
+  window.addEventListener('resize', syncFilterRail);
+  if(window.ResizeObserver) new ResizeObserver(syncFilterRail).observe(strip);
+
+  var down = false, dragging = false, swallow = false, pid = null, x0 = 0, left0 = 0;
+
+  strip.addEventListener('pointerdown', function(e){
+    if(e.button !== 0) return;
+    if(e.pointerType === 'touch') return;   // let the OS do native momentum panning
+    if(e.target.closest('select, input')) return;
+    down = true; dragging = false; swallow = false;
+    pid = e.pointerId; x0 = e.clientX; left0 = strip.scrollLeft;
+  });
+
+  strip.addEventListener('pointermove', function(e){
+    if(!down || e.pointerId !== pid) return;
+    var dx = e.clientX - x0;
+    if(!dragging){
+      if(Math.abs(dx) < 4) return;
+      dragging = true; swallow = true;
+      strip.classList.add('dragging');
+      try{ strip.setPointerCapture(pid); }catch(err){}
+    }
+    strip.scrollLeft = left0 - dx;
+    e.preventDefault();
+  });
+
+  function endDrag(){
+    if(!down) return;
+    down = false; dragging = false;
+    strip.classList.remove('dragging');
+    try{ strip.releasePointerCapture(pid); }catch(err){}
+  }
+  strip.addEventListener('pointerup', endDrag);
+  strip.addEventListener('pointercancel', endDrag);
+  strip.addEventListener('lostpointercapture', endDrag);
+
+  // a drag must never toggle the chip it ended on
+  strip.addEventListener('click', function(e){
+    if(!swallow) return;
+    swallow = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+
+  // vertical wheel / trackpad scrolls the rail sideways, but only while it has room
+  strip.addEventListener('wheel', function(e){
+    if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    var max = strip.scrollWidth - strip.clientWidth;
+    if(max <= 1) return;
+    var next = strip.scrollLeft + e.deltaY;
+    if((e.deltaY < 0 && strip.scrollLeft <= 0) || (e.deltaY > 0 && strip.scrollLeft >= max)) return;
+    strip.scrollLeft = Math.max(0, Math.min(max, next));
+    e.preventDefault();
+  }, {passive:false});
+})();
+
+/* ============================================================
+   RENDER - list
+   ============================================================ */
+/* match on the raw text, escape each piece after, so "'73" or "ford m" can't break the HTML */
+function hi(text, terms){
+  terms = (terms||[]).filter(Boolean);
+  if(!terms.length) return esc(text);
+  var re = new RegExp('(' + terms.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }).join('|') + ')', 'ig');
+  return String(text==null?'':text).split(re).map(function(p, i){
+    return i % 2 ? '<mark>' + esc(p) + '</mark>' : esc(p);
+  }).join('');
+}
+function render(){
+  checkPhotos();
+  renderFilters();
+  var res = filtered();
+  var terms = state.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
+  $('#resultCount').textContent = res.length + (res.length === 1 ? ' result' : ' results');
+  var af = [state.series, state.pack, state.marque, state.flag].filter(Boolean);
+  $('#activeFilters').textContent = af.length ? af.join(' / ') : '';
+  $('#clearq').hidden = !state.q;
+
+  var linked = ITEMS.filter(function(i){ return (i.posts||[]).length; }).length;
+  $('#statTotal').textContent = ITEMS.length;
+  $('#statLinked').textContent = linked;
+  var overN = ITEMS.filter(function(i){ var so = stockOf(i); return so && so.bal === 'shortstock'; }).length;
+  $('#statOver').textContent = overN;
+  $('#statOverWrap').hidden = !overN;
+
+  if(!res.length){
+    $('#list').innerHTML = '<div class="empty"><p>Nothing matches that.</p>' +
+      '<span>Try the code, the car, or the series</span></div>';
+  } else {
+    var cap = res.slice(0, 400), h = '', grid = state.view === 'grid';
+    for(var i=0;i<cap.length;i++){
+      var it = cap[i], d = i < 30 ? (i*0.008)+'s' : '0s';
+      var np = (it.posts||[]).length;
+      if(grid){
+        h += '<button class="item card" data-code="'+esc(it.code)+'" style="'+(quiet ? 'animation:none' : 'animation-delay:'+d)+'"'+
+             (state.selected === it.code ? ' aria-current="true"' : '')+'>'+
+          '<span class="cphoto"><img src="'+esc(photoSrc(photoFile(it)))+'" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;ph&quot;>'+(it.image ? 'Photo not found' : 'No photo yet')+'</span>\'">'+
+            '<span class="cidx">'+String(it._seq).padStart(3,'0')+'</span>'+
+            '<span class="linkdot'+(np?' on':'')+'" title="'+np+' post link(s)"></span>'+
+          '</span>'+
+          '<span class="cbody">'+
+            '<span class="rowcode mono">'+hi(it.code, terms)+'</span>'+
+            '<span class="rowname">'+hi(it.name, terms)+'</span>'+
+            '<span class="ctags">'+
+              stockHint(it)+
+              (it.promo ? '<span class="tag">Promo</span>' : '')+
+              (it.pack ? '<span class="tag">'+esc(it.pack)+'</span>' : '')+
+            '</span>'+
+          '</span>'+
+        '</button>';
+        continue;
+      }
+      h += '<button class="item row" data-code="'+esc(it.code)+'" style="'+(quiet ? 'animation:none' : 'animation-delay:'+d)+'"'+
+           (state.selected === it.code ? ' aria-current="true"' : '')+'>'+
+        '<span class="idx">'+String(it._seq).padStart(3,'0')+'</span>'+
+        '<span class="thumb"><img src="'+esc(photoSrc(photoFile(it)))+'" alt="" loading="lazy" onerror="this.parentNode.innerHTML=\'<span class=&quot;ph mono&quot;>'+(it.image ? '?' : '—')+'</span>\'"></span>'+
+        '<span class="rowmain">'+
+          '<span class="rowname">'+hi(it.name, terms)+'</span>'+
+          '<span class="rowcode mono">'+hi(it.code, terms)+'</span>'+
+        '</span>'+
+        '<span class="rowtags">'+
+          stockHint(it)+
+          (it.promo ? '<span class="tag">Promo</span>' : '')+
+          (it.pack ? '<span class="tag">'+esc(it.pack)+'</span>' : '')+
+          '<span class="linkdot'+(np?' on':'')+'" title="'+np+' post link(s)"></span>'+
+        '</span>'+
+      '</button>';
+    }
+    if(res.length > cap.length){
+      h += '<div class="empty"><span>Showing first 400 of '+res.length+' — narrow the search</span></div>';
+    }
+    $('#list').innerHTML = h;
+  }
+  renderDetail();
+}
+/* Selecting only moves the highlight and redraws the detail pane.
+   Rebuilding the whole list here would replay the row animation on every click. */
+function select(code){
+  state.selected = code;
+  var rows = document.querySelectorAll('#list .item');
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].dataset.code === code) rows[i].setAttribute('aria-current','true');
+    else rows[i].removeAttribute('aria-current');
+  }
+  renderDetail();
+}
+$('#list').addEventListener('click', function(e){
+  var r = e.target.closest('.item');
+  if(!r) return;
+  select(r.dataset.code);
+});
+
+/* ============================================================
+   VIEW - list (index + viewer) or grid (cards + drawer)
+   ============================================================ */
+/* grid view, or any width under 981 (phone, tablet): the item opens as a sheet over the list */
+var narrowMQ = window.matchMedia ? matchMedia('(max-width:980px)') : null;
+function drawerMode(){ return state.view === 'grid' || !!(narrowMQ && narrowMQ.matches); }
+function applyView(){
+  $('.app').classList.toggle('v-grid', state.view === 'grid');
+  $('.app').classList.toggle('as-drawer', drawerMode());
+  $('#list').dataset.size = state.size;
+  var b = document.querySelectorAll('.viewtog button');
+  for(var i=0;i<b.length;i++){
+    var on = b[i].dataset.view ? b[i].dataset.view === state.view : b[i].dataset.size === state.size;
+    b[i].setAttribute('aria-pressed', on);
+  }
+}
+/* size only changes the column width: no re-render, so cards do not replay their entrance */
+$('#sizetog').addEventListener('click', function(e){
+  var b = e.target.closest('[data-size]');
+  if(!b || b.dataset.size === state.size) return;
+  state.size = b.dataset.size;
+  try{ localStorage.setItem('hw_idx_card', state.size); }catch(e){}
+  applyView();
+  var cur = document.querySelector('#list .item[aria-current="true"]') ||
+            (document.activeElement && document.activeElement.closest && document.activeElement.closest('#list .item'));
+  if(cur) cur.scrollIntoView({block:'nearest'});
+});
+function setView(v){
+  if(v === state.view) return;
+  state.view = v;
+  /* going to grid means you want to browse: start with the drawer closed */
+  if(v === 'grid') state.selected = null;
+  try{ localStorage.setItem('hw_idx_view', v); }catch(e){}
+  applyView();
+  $('#listpane').scrollTop = 0;
+  render();
+  var cur = document.querySelector('#list .item[aria-current="true"]');
+  if(cur) cur.scrollIntoView({block:'nearest'});
+}
+$('#viewtog').addEventListener('click', function(e){
+  var b = e.target.closest('[data-view]');
+  if(b) setView(b.dataset.view);
+});
+/* closing the drawer hands focus back to the card you came from, so the arrows keep working */
+function closeDrawer(){
+  var code = state.selected;
+  select(null);
+  var el = code && document.querySelector('#list .item[data-code="'+code.replace(/["\\]/g,'\\$&')+'"]');
+  if(el) el.focus({preventScroll:true});
+}
+function stepItem(n){
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#list .item'));
+  if(!rows.length) return;
+  var browsing = state.view === 'grid' && !state.selected;
+  /* grid with the drawer closed: arrows only move the focus ring, Enter opens the card */
+  var cur = browsing ? rows.indexOf(document.activeElement)
+                     : rows.findIndex(function(r){ return r.dataset.code === state.selected; });
+  var nx = cur === -1 ? 0 : Math.max(0, Math.min(rows.length-1, cur+n));
+  if(browsing){ rows[nx].focus({preventScroll:true}); rows[nx].scrollIntoView({block:'nearest'}); return; }
+  select(rows[nx].dataset.code);
+  rows[nx].scrollIntoView({block:'nearest'});
+}
+function gridCols(){
+  var t = getComputedStyle($('#list')).gridTemplateColumns;
+  return t && t !== 'none' ? t.split(' ').length : 1;
+}
+$('#drawerscrim').addEventListener('click', closeDrawer);
+/* crossing 980 (rotate a tablet, resize the window) moves the open item between the pane and the sheet */
+if(narrowMQ){
+  var onNarrow = function(){ applyView(); renderDetail(); };
+  if(narrowMQ.addEventListener) narrowMQ.addEventListener('change', onNarrow);
+  else if(narrowMQ.addListener) narrowMQ.addListener(onNarrow);
+}
+$('#detail').addEventListener('click', function(e){
+  if(e.target.closest('[data-dclose]')){ closeDrawer(); return; }
+  var s = e.target.closest('[data-dstep]');
+  if(s) stepItem(+s.dataset.dstep);
+});
+applyView();
+
+/* ============================================================
+   RENDER - detail
+   ============================================================ */
+function itemByCode(c){ for(var i=0;i<ITEMS.length;i++) if(ITEMS[i].code===c) return ITEMS[i]; return null; }
+function shortUrl(u){
+  return String(u||'').replace(/^https?:\/\//,'').replace(/^www\./,'');
+}
+function postLabel(l, i, many){
+  if(l && l.title) return l.title;
+  return 'Pre-order post' + (many ? ' ' + (i+1) : '');
+}
+/* entries: [{l, i, many}] - i and many decide the fallback label when a link has no title */
+function replyText(it, entries){
+  var t = it.name + '\nItem code: ' + it.code;
+  if(entries.length){
+    t += '\n' + entries.map(function(e){
+      return postLabel(e.l, e.i, e.many) + ': ' + e.l.url; }).join('\n');
+  }
+  return t;
+}
+
+function renderDetail(){
+  var d = $('#detail'), it = state.selected ? itemByCode(state.selected) : null;
+  var sheet = drawerMode();
+  $('.app').classList.toggle('drawer-open', sheet && !!it);
+  document.body.classList.toggle('lock', sheet && !!it);   /* phone: the list behind the sheet stays put */
+  if(!it && sheet){
+    /* drawer closed: leave the old content in so it slides out instead of blinking empty */
+    return;
+  }
+  if(!it){
+    d.className = 'detail blank';
+    d.innerHTML = '<div class="blankmsg"><img class="logo" src="assets/mz-garage-logo.png" alt="">' +
+      '<h2>Pick an <em>item</em>.</h2>' +
+      '<p>Search a code, a car name, or a series. The photo, the stock count and every pre-order post link show up here.</p>' +
+      '<p style="margin-top:14px"><span class="kbd">/</span> to search · <span class="kbd">↑↓</span> to move · <span class="kbd">↵</span> to open</p></div>';
+    return;
+  }
+  d.className = 'detail';
+  var links = it.posts || [];
+
+  var h = '';
+  if(sheet){
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#list .item'));
+    var pos = rows.findIndex(function(r){ return r.dataset.code === it.code; });
+    h += '<div class="dbar">' +
+      '<button data-dstep="-1" title="Previous item (←)"'+(pos <= 0 ? ' disabled' : '')+'>‹ Prev</button>' +
+      '<button data-dstep="1" title="Next item (→)"'+(pos === -1 || pos >= rows.length-1 ? ' disabled' : '')+'>Next ›</button>' +
+      '<span class="dpos">'+(pos === -1 ? '' : (pos+1)+' of '+rows.length)+'</span>' +
+      '<button class="dclose" data-dclose title="Back to the '+(state.view === 'grid' ? 'grid' : 'list')+' (Esc)">✕ Close</button>' +
+    '</div>';
+  }
+  h += '<div class="dwrap'+(quiet ? ' still' : '')+'"><div class="dside">';
+
+  /* no image set on the item -> still try images/<code>.jpg, so a photo
+     dropped into /images with the right name shows without editing the item */
+  var pf = photoFile(it);
+  h += '<div class="dphoto">' +
+    '<img src="'+esc(photoSrc(pf))+'" alt="'+esc(it.name)+'" data-zoom title="Click to see the full photo" onerror="this.parentNode.classList.add(\'noimg\');this.outerHTML=\'<div class=&quot;missing&quot;><b>'+(it.image ? 'Photo file not found' : 'No photo yet')+'</b><code>images/'+esc(pf)+'</code></div>\'">' +
+    '<div class="photobtns">' +
+      '<button class="dlimg" data-zoom title="See the whole card, uncropped">\u2922 Full<span class="pw"> photo</span></button>' +
+      '<button class="dlimg" data-dlimg="'+esc(pf)+'" title="Save '+esc(pf)+(canShareFiles() ? ' to Photos' : ' to your downloads')+'">\u2193 Save<span class="pw"> photo</span></button>' +
+    '</div></div>';
+
+  h += '<div class="dident">';
+  h += '<div class="dcode"><button class="mono" data-copy="'+esc(it.code)+'">'+esc(it.code)+'</button></div>';
+  h += '<h2 class="dname">'+esc(it.name)+'</h2>';
+
+  h += '<div class="dmeta">';
+  if(it.promo) h += '<span class="tag">Promo</span>';
+  if(it.series) h += '<span class="tag">'+esc(it.series)+'</span>';
+  if(it.sub) h += '<span class="tag">'+esc(it.sub)+'</span>';
+  if(it.pack) h += '<span class="tag">'+esc(it.pack)+'</span>';
+  (it.marques||[]).forEach(function(m){ h += '<span class="tag">'+esc(m)+'</span>'; });
+  if(it.archived) h += '<span class="tag" style="border-color:var(--accent);color:var(--accent-ink)">Do not use</span>';
+  if(it._removed) h += '<span class="stag gone">Removed from sheet</span>';
+  h += '</div>';
+
+  h += '<div class="dacts">' +
+    '<button class="tbtn primary" data-edit="'+esc(it.code)+'">Edit item</button>' +
+    '<button class="tbtn" data-copy="'+esc(it.name)+'">Copy name</button>' +
+    '<button class="tbtn" data-dup="'+esc(it.code)+'">Duplicate</button>' +
+    (it.archived ? '<button class="tbtn" data-archive="'+esc(it.code)+'">Unarchive</button>' : '') +
+    '</div>';
+
+  if(it.notes){ h += '<div class="sect"><h3>Notes</h3><div class="notes">'+esc(it.notes)+'</div></div>'; }
+
+  h += '</div></div>';   /* .dident, .dside */
+
+  h += '<div class="dmain">';
+  h += stockSection(it);
+
+  h += '<div class="sect"><h3>Pre-order post links <span>'+links.length+'</span></h3>';
+  if(!links.length){
+    h += '<div class="nopost">No post link yet.<br>Open Edit and paste the Facebook post link.</div>';
+  } else {
+    links.forEach(function(l, i){
+      var titled = !!l.title;
+      h += '<div class="postcard">' +
+        '<div class="ptop"><span class="ptitle'+(titled?'':' untitled mono')+'">' +
+          esc(postLabel(l, i, links.length > 1)) + '</span></div>' +
+        '<div class="purl">'+esc(shortUrl(l.url))+'</div>' +
+        '<div class="pacts">' +
+          '<a class="pact go" href="'+esc(/^https?:\/\//i.test(l.url) ? l.url : '#')+'" target="_blank" rel="noopener">Open post ↗</a>' +
+          '<button class="pact" data-copy="'+esc(l.url)+'">Copy link</button>' +
+          '<button class="pact" data-reply="'+esc(it.code)+'|'+i+'">Copy reply</button>' +
+        '</div></div>';
+    });
+    if(links.length > 1){
+      h += '<div class="pacts" style="margin-top:11px">' +
+        '<button class="pact" data-copyall="'+esc(it.code)+'">Copy all '+links.length+' links</button>' +
+        '<button class="pact" data-replyall="'+esc(it.code)+'">Copy reply with every post</button>' +
+        '</div>';
+    }
+  }
+  h += '</div>';
+
+  h += '</div></div>';   /* .dmain, .dwrap */
+  d.innerHTML = h;
+  d.scrollTop = 0;
+  if(canShareFiles()) prepSharePhoto(pf);
+}
+
+/* ============================================================
+   RENDER - stock and miners (v3)
+   ============================================================ */
+function stockHint(it){
+  if(it._removed) return '<span class="stag gone" title="This code is not in the sheet anymore">Removed</span>';
+  var s = stockOf(it);
+  if(!s || s.status === 'none') return '';
+  if(s.sheet){
+    if(s.bal === 'overstock') return '<span class="stag overstock" title="'+s.balance+' more '+s.supplyFrom+' than the mine total">+'+s.balance+' over</span>';
+    if(s.bal === 'shortstock') return '<span class="stag shortstock" title="'+(-s.balance)+' more mined than '+s.supplyFrom+'">Short '+(-s.balance)+'</span>';
+    return '<span class="stag complete" title="'+s.supply+' '+s.supplyFrom+', '+s.source+' mined">Complete</span>';
+  }
+  if(s.status === 'over') return '<span class="stag over" title="'+(-s.projected)+' more tagged than arrived plus upcoming">Over '+(-s.projected)+'</span>';
+  if(s.status === 'short') return '<span class="stag short" title="'+(-s.remaining)+' tagged ahead of stock, upcoming covers them">Short '+(-s.remaining)+'</span>';
+  if(s.status === 'out') return '<span class="stag out" title="Every arrived unit is tagged">All tagged</span>';
+  return '<span class="stag left" title="'+s.remaining+' of '+s.arrived+' not tagged yet">'+s.remaining+' left</span>';
+}
+
+function tallyHTML(s, tags){
+  tags = tags || STOCK_TAGS;
+  if(s.arrived == null){
+    /* not counted yet: just the tagged units */
+    if(!s.tagged) return '';
+  }
+  var A = s.arrived || 0, U = s.upcoming, T = s.tagged, cap = A + U;
+  var total = Math.max(T, cap);
+  if(!total) return '';
+  var counted = s.arrived != null;
+  var label = T + ' tagged' + (counted ? ' of ' + A + ' arrived' + (U ? ' plus ' + U + ' upcoming' : '') : '');
+  var h = '';
+  if(total <= 60){
+    /* order: tagged units, open units in hand, then upcoming units not tagged yet.
+       A line marks where the arrived stock stops. */
+    var i = 0;
+    function pip(cls, title, sw){
+      var o = '';
+      if(counted && i === A && A > 0 && total > A) o += '<i class="pipcut" title="Quantity arrived stops here"></i>';
+      o += '<i class="pip'+(cls ? ' ' + cls : '')+'" title="'+title+'" style="'+(sw ? '--sw:'+sw+';' : '')+
+           'animation-delay:'+(Math.min(i, 45) * 12)+'ms"></i>';
+      i++;
+      return o;
+    }
+    h += '<div class="pips" role="img" aria-label="'+esc(label)+'">';
+    tags.forEach(function(t){
+      for(var j = 0; j < s[t.k]; j++){
+        var cls = !counted ? '' : i >= cap ? 'extra' : i >= A ? 'ahead' : '';
+        var title = cls === 'extra' ? t.label + ', no stock for this one'
+                  : cls === 'ahead' ? t.label + ', waiting for upcoming stock' : t.label;
+        h += pip(cls, title, t.c);
+      }
+    });
+    while(counted && i < A) h += pip('open', 'In hand, not tagged yet');
+    while(counted && i < cap) h += pip('soon', 'Upcoming, not tagged yet');
+    h += '</div>';
+  } else {
+    h += '<div class="sbar" role="img" aria-label="'+esc(label)+'"><div class="fill" style="width:'+(T / total * 100)+'%">';
+    tags.forEach(function(t){
+      if(s[t.k]) h += '<i title="'+t.label+' '+s[t.k]+'" style="flex:'+s[t.k]+';background:'+t.c+'"></i>';
+    });
+    h += '</div>';
+    if(counted && U) h += '<div class="upzone" style="left:'+(A / total * 100)+'%;width:'+(U / total * 100)+'%" title="Upcoming stock"></div>';
+    if(counted && T > cap) h += '<div class="overzone" style="left:'+(cap / total * 100)+'%" title="Tagged past arrived plus upcoming"></div>';
+    h += '</div>';
+  }
+  return '<div class="tally">' + h + '</div>';
+}
+
+function stockSection(it){
+  var s = stockOf(it), h;
+  if(sheetOn()){
+    h = sheetStockHead(it);
+    if(it._removed) return h + removedCard(it) + '</div>';
+    if(!s){
+      return h + '<div class="nopost">No stock count yet.<br>' +
+        (it._inSheet ? 'It is on row ' + it._sheetRow + ' of the sheet. The numbers show here once they are filled in.'
+                     : 'This code is not in the sheet. Add a row and paste the code.') +
+        (it._inSheet ? '' : '<div class="pacts"><button class="pact" data-copy="'+esc(it.code)+'">Copy code</button></div>') +
+        '</div></div>';
+    }
+    if(s.sheet) return h + sheetCard(s) + '</div>';
+  } else {
+    h = '<div class="sect"><h3>Stock and miners <button class="slink" data-editstock="'+esc(it.code)+'">'+
+        (s ? 'Edit numbers' : '+ Add numbers')+'</button></h3>';
+    if(!s){
+      return h + '<div class="nopost">No stock count yet.<br>Add the numbers once the item arrives.</div></div>';
+    }
+  }
+  var over = s.status === 'over', short = s.status === 'short';
+  var big = s.remaining == null ? '–' : over ? '+' + (-s.projected) : short ? '+' + (-s.remaining) : s.remaining;
+
+  h += '<div class="stockcard s-'+s.status+'">';
+
+  h += '<div class="shero"><div>' +
+         '<div class="big">'+big+'</div>' +
+         '<div class="lbl">'+(over ? 'Over tagged' : short ? 'Tagged ahead' : 'Remaining stock')+'</div>' +
+       '</div><div class="sright">' +
+         '<span class="sstatus '+s.status+'">'+STATUS_LABEL[s.status]+'</span>' +
+         '<div class="arrs">' +
+           '<div class="arr"><b>'+(s.arrived == null ? '–' : s.arrived)+'</b><span>Quantity arrived</span></div>' +
+           '<div class="arr soon'+(s.upcoming ? '' : ' zero')+'"><b>'+(s.upcoming ? '+' + s.upcoming : '0')+'</b><span>Upcoming</span></div>' +
+         '</div>' +
+       '</div></div>';
+
+  h += tallyHTML(s);
+
+  if(s.arrived == null){
+    h += '<div class="sformula"><b>'+s.tagged+'</b> tagged so far. Add the quantity arrived to see what is left.</div>';
+  } else {
+    var inHand = s.remaining >= 0 ? s.remaining + ' left'
+               : s.upcoming ? 'short by ' + (-s.remaining) : 'over by ' + (-s.remaining);
+    h += '<div class="sformula"><b>'+s.arrived+'</b> arrived − <b>'+s.tagged+'</b> tagged = <b>'+inHand+'</b>';
+    h += '</div>';
+  }
+
+  function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+  if(over){
+    h += '<div class="snote"><b>Check the tags.</b> '+plural(-s.projected, 'more miner is', 'more miners are')+
+         ' tagged than '+(s.upcoming ? 'arrived plus upcoming' : 'what arrived')+'.</div>';
+  } else if(short){
+    h += '<div class="snote"><b>Covered by upcoming.</b> '+plural(-s.remaining, 'miner is', 'miners are')+
+         ' tagged ahead of stock. The '+s.upcoming+' upcoming covers them'+
+         (s.projected ? ', with '+s.projected+' left after.' : '.')+'</div>';
+  } else if(s.status === 'offer'){
+    var give = Math.min(s.remaining, s.waiting);
+    h += '<div class="snote"><b>Offer to waiting miners.</b> '+s.remaining+' left and '+s.waiting+' in line. '+
+         'Offer '+give+' to the next '+(give === 1 ? 'miner' : 'miners')+'.'+
+         (s.upcoming ? ' '+s.upcoming+' more upcoming.' : '')+'</div>';
+  } else if(s.status === 'out' && (s.waiting || s.upcoming)){
+    h += '<div class="snote"><b>All tagged.</b> '+
+         (s.upcoming ? s.upcoming+' upcoming, not tagged yet. ' : '')+
+         (s.waiting ? (s.upcoming ? 'Offer them to the '+s.waiting+' waiting when they arrive.'
+                                  : s.waiting+' still waiting in case someone drops.') : '')+'</div>';
+  }
+
+  h += '<div class="stiles">';
+  STOCK_TAGS.forEach(function(t){
+    var v = s[t.k];
+    var share = s.arrived ? Math.round(v / s.arrived * 100) + '% of arrived' : ' ';
+    h += '<div class="stile'+(v ? '' : ' zero')+'">' +
+           '<span class="skey" style="--sw:'+t.c+'"><i></i>'+t.label+'</span>' +
+           '<b>'+v+'</b><small>'+share+'</small></div>';
+  });
+  h += '</div>';
+
+  h += upcomingHTML(s);
+
+  h += '<div class="sfoot">' +
+         '<div class="sdrop'+(s.droppedTotal ? '' : ' zero')+'"><span class="skey">Did not get</span>' +
+           '<div class="srow"><b>'+s.droppedTotal+'</b><div class="dchips">' +
+           DROP_TAGS.map(function(t){
+             var v = s.dropped[t.k];
+             return '<span class="dchip'+(v ? '' : ' zero')+'">'+t.label+'<b>'+v+'</b></span>';
+           }).join('') +
+         '</div></div></div>' +
+         '<div class="swait'+(s.waiting ? '' : ' zero')+'"><span class="skey">Waiting</span>' +
+           '<b>'+s.waiting+'</b><small>miners in line</small></div>' +
+       '</div>';
+
+  h += '</div></div>';
+  return h;
+}
+
+/* ------------------------------------------------------------
+   Dashboard stock card (sheet v5). Same look as the v3 card, the sheet's numbers.
+   ------------------------------------------------------------ */
+var COLL_TAGS = STOCK_TAGS.filter(function(t){ return t.k === 'invoiced' || t.k === 'paid'; });
+function sgn(v){ return v < 0 ? '\u2212' + (-v) : String(v); }
+function pct(v){ return (Math.round(v * 100) / 100) + '%'; }
+function sheetCard(s){
+  function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+  var e = s.entered, over = s.status === 'over', short = s.status === 'short';
+  var h = '<div class="stockcard s-'+s.status+' s-'+s.bal+'">';
+  /* left = invoice balance (on hand - collected), right = stock balance (ordered - mine total) */
+  var invLabel = s.remaining < 0 ? 'Over invoiced' : s.remaining > 0 ? 'Under invoiced' : 'Fully invoiced';
+  var balTxt = s.balance > 0 ? '+' + s.balance : sgn(s.balance);
+  var remTxt = e ? (s.remaining > 0 ? '+' + s.remaining : sgn(s.remaining)) : '';
+
+  function tile(head, sub, v, txt, label){
+    var k = !e ? 'none' : v < 0 ? 'neg' : v > 0 ? 'pos' : 'zero';
+    var mark = {neg:'\u25BC', pos:'\u25B2', zero:'=', none:'\u2013'}[k];
+    return '<div class="btile '+k+'"><div class="bhead">'+head+'<small>'+sub+'</small></div>' +
+           '<div class="bn">'+(e ? txt : '\u2013')+'</div>' +
+           '<span class="bstat"><i aria-hidden="true">'+mark+'</i>'+label+'</span></div>';
+  }
+  h += '<div class="sbal">' +
+       tile('Invoice', 'on hand \u2212 collected', s.remaining, remTxt, e ? invLabel : 'Stock not entered') +
+       tile('Stock', s.supplyFrom + ' \u2212 mine total', s.balance, balTxt, BAL_LABEL[s.bal]) +
+       '</div>';
+
+  /* where the stock comes from */
+  if(s.orders || s.jpn || s.macnn || s.others){
+    h += '<div class="sorders"><span class="skey">Total orders</span><b>'+sgn(s.orders)+'</b>' +
+      [['JPN', s.jpn], ['MACNN', s.macnn], ['Others', s.others]].map(function(x){
+        return '<span class="dchip'+(x[1] ? '' : ' zero')+'">'+x[0]+'<b>'+sgn(x[1])+'</b></span>';
+      }).join('') + '</div>';
+  }
+
+  if(e){
+    h += tallyHTML(s, COLL_TAGS);
+    h += '<div class="sformula"><b>'+sgn(s.onHand)+'</b> on hand − <b>'+s.collection+'</b> collected = <b>'+remTxt+'</b> '+invLabel.toLowerCase();
+    h += '<span class="upline"><b>'+sgn(s.supply)+'</b> '+s.supplyFrom+' − <b>'+s.source+'</b> mine total = <b>'+
+         balTxt+'</b> '+BAL_LABEL[s.bal].toLowerCase()+'</span>';
+    h += '</div>';
+    if(s.bal === 'shortstock'){
+      h += '<div class="snote"><b>Short '+(-s.balance)+'.</b> '+plural(-s.balance, 'more unit is', 'more units are')+
+           ' mined than '+s.supplyFrom+'. Order more or cancel miners.</div>';
+    }
+    if(over){
+      h += '<div class="snote"><b>Check the sheet.</b> '+plural(-s.projected, 'more unit is', 'more units are')+
+           ' collected than '+(s.upcoming ? 'on hand plus upcoming' : 'on hand')+'.</div>';
+    } else if(short){
+      h += '<div class="snote"><b>Covered by upcoming.</b> '+plural(-s.remaining, 'unit is', 'units are')+
+           ' collected ahead of stock. The '+s.upcoming+' upcoming covers them'+
+           (s.projected ? ', with '+s.projected+' left after.' : '.')+'</div>';
+    }
+    if(s.upRaw < 0){
+      h += '<div class="snote"><b>Upcoming is '+sgn(s.upRaw)+' in the sheet.</b> Stock on hand is more than Total orders. ' +
+           'JPN, MACNN or Others may be missing a number.</div>';
+    }
+  } else {
+    h += '<div class="sformula">Stock On Hand and Total Orders are 0 in the sheet. Fill them in to see what is left.</div>';
+  }
+
+  /* collection: Paid / Collection, the sheet's Completion % */
+  h += '<div class="scoll"><div class="suphead"><span class="skey">Collection completion</span>' +
+       '<span class="supsub"><b>'+pct(s.completion)+'</b> paid · '+s.paid+' of '+s.collection+'</span></div>';
+  if(s.collection){
+    h += '<div class="supbar" role="img" aria-label="'+s.paid+' paid and '+s.invoiced+' invoiced of '+s.collection+' collected">' +
+      (s.paid ? '<i style="flex:'+s.paid+';background:var(--c-paid)" title="Paid '+s.paid+'"></i>' : '') +
+      (s.invoiced ? '<i style="flex:'+s.invoiced+';background:var(--c-inv)" title="Invoiced '+s.invoiced+'"></i>' : '') +
+      '</div>';
+  } else {
+    h += '<div class="supbar"><i class="free" style="flex:1" title="Nothing collected yet"></i></div>';
+  }
+  h += '</div>';
+
+  h += '<div class="stiles">';
+  STOCK_TAGS.forEach(function(t){
+    var v = s[t.k], inColl = t.k === 'invoiced' || t.k === 'paid';
+    var note = inColl ? (s.collection ? Math.round(v / s.collection * 100) + '% of collection' : ' ') : 'not in collection';
+    h += '<div class="stile'+(v ? '' : ' zero')+'">' +
+           '<span class="skey" style="--sw:'+t.c+'"><i></i>'+t.label+'</span>' +
+           '<b>'+v+'</b><small>'+note+'</small>' +
+           (t.k === 'paid' ? '<small class="ssum">Paid+Hold+Semi <b>'+(s.paid + s.paidHold + s.semiPaid)+'</b></small>' : '') +
+         '</div>';
+  });
+  h += '</div>';
+
+  var onHold = s.paidHold + s.semiPaid;
+  h += '<div class="stiles sminers">' +
+    '<div class="stile'+(s.source ? '' : ' zero')+'"><span class="skey">Mine total</span><b>'+s.source+'</b><small>all miner rows</small></div>' +
+    '<div class="stile'+(s.onHand ? '' : ' zero')+'"><span class="skey">Stock on hand</span><b>'+sgn(s.onHand)+'</b><small>arrived stock</small></div>' +
+    '<div class="stile'+(s.collection ? '' : ' zero')+'"><span class="skey">Current invoice</span><b>'+s.collection+'</b><small>invoiced + paid</small></div>' +
+    '<div class="stile'+(s.noAlloc ? '' : ' zero')+'"><span class="skey">No allocation yet</span><b>'+s.noAlloc+'</b><small>not invoiced or paid</small></div>' +
+    '<div class="stile'+(onHold ? '' : ' zero')+'"><span class="skey">On-hold</span><b>'+onHold+'</b><small>paid-hold + semi-paid</small></div>' +
+    '</div>';
+
+  if(e && s.upcoming) h += upcomingHTML(s);
+
+  return h + '</div>';
+}
+
+/* sheet mode: heading with the row number + Edit in Sheet, then a warning when the numbers are old */
+function sheetStockHead(it){
+  var h = '<div class="sect"><h3>Stock and miners <span class="shead-r">' +
+    (it._sheetRow ? '<span class="ssrc">Sheet row ' + it._sheetRow + '</span>' : '') +
+    '<button class="slink" data-sheetedit="'+esc(it.code)+'">Edit in Sheet ↗</button></span></h3>';
+  if(SYNC.err){
+    h += '<div class="sstale"><b>Last synced ' + esc(sheetTime(sheetCache.at)) + '.</b> ' + esc(SYNC.err) +
+         ' These numbers may be old.</div>';
+  }
+  return h;
+}
+/* a code that was in the sheet before and is gone now. The app never deletes it on its own. */
+function removedCard(it){
+  return '<div class="rmcard"><div class="rmtop"><span class="stag gone">Removed from sheet</span></div>' +
+    '<p>This code was in the sheet before, but the row is gone now. The item stays in the app until you decide.</p>' +
+    '<ol>' +
+      '<li><b>Archive</b> (recommended). It stays searchable, marked Do not use.</li>' +
+      '<li><b>Delete</b>. Removes it from the app. Export after.</li>' +
+      '<li><b>Keep</b>. Ask for the row back in the sheet, with the same code.</li>' +
+    '</ol>' +
+    '<div class="pacts">' +
+      (it.archived ? '' : '<button class="pact go" data-archive="'+esc(it.code)+'">Archive</button>') +
+      '<button class="pact" data-delitem="'+esc(it.code)+'">Delete</button>' +
+      '<button class="pact" data-copy="'+esc(it.code)+'">Copy code</button>' +
+    '</div></div>';
+}
+
+/* Upcoming stock, broken down:
+   Tagged ahead = miners tagged past what arrived, waiting on the upcoming units (capped at upcoming)
+   Open         = upcoming units nobody is tagged on yet
+   Left after   = arrived + upcoming - tagged  (negative = over tagged) */
+function upcomingHTML(s){
+  var U = s.upcoming;
+  if(!U){
+    return '<div class="sup none"><span class="skey"><i class="dash"></i>Upcoming stock</span>' +
+           '<span class="supsub">None ordered</span></div>';
+  }
+  var A = s.arrived || 0, T = s.tagged, total = A + U;
+  var ahead = Math.max(0, Math.min(U, T - A));
+  var open = U - ahead;
+  var over = Math.max(0, T - total);
+  var after = s.projected;
+
+  var h = '<div class="sup">';
+  h += '<div class="suphead"><span class="skey"><i class="dash"></i>Upcoming stock</span>' +
+       '<span class="supsub">Ordered, not here yet</span></div>';
+
+  h += '<div class="supbar" role="img" aria-label="'+ahead+' of '+U+' upcoming already tagged, '+open+' open'+
+       (over ? ', '+over+' tagged with no stock' : '')+'">';
+  if(ahead) h += '<i class="claimed" style="flex:'+ahead+'" title="'+ahead+' tagged ahead"></i>';
+  if(open) h += '<i class="free" style="flex:'+open+'" title="'+open+' open"></i>';
+  if(over) h += '<i class="nostock" style="flex:'+over+'" title="'+over+' tagged with no stock"></i>';
+  h += '</div>';
+
+  h += '<div class="stiles">' +
+    '<div class="stile"><span class="skey">On the way</span><b class="up">+'+U+'</b><small>units ordered</small></div>' +
+    '<div class="stile'+(ahead ? '' : ' zero')+'"><span class="skey">Tagged ahead</span><b>'+ahead+'</b>' +
+      '<small>'+(ahead ? 'waiting for it' : 'nobody yet')+'</small></div>' +
+    '<div class="stile'+(open ? '' : ' zero')+'"><span class="skey">Open</span><b>'+open+'</b>' +
+      '<small>'+(open ? (s.waiting ? 'offer to waiting' : 'free to tag') : 'all spoken for')+'</small></div>' +
+    '<div class="stile'+(after < 0 ? ' warn' : after ? '' : ' zero')+'"><span class="skey">Left after</span>' +
+      '<b>'+(after < 0 ? '−' + (-after) : after)+'</b>' +
+      '<small>'+(after < 0 ? 'over tagged' : 'of ' + total + ' total')+'</small></div>' +
+    '</div>';
+
+  return h + '</div>';
+}
+
+function suggestFile(it){ return it.code.toLowerCase() + '.jpg'; }
+function photoFile(it){ return it.image || suggestFile(it); }
+
+/* A photo dropped into the editor shows right away, from memory, until the
+   downloaded file is moved into /images. Keyed by filename, lost on reload. */
+var sessionPhotos = {};
+function photoSrc(file){ return sessionPhotos[file] || ('images/' + file); }
+
+/* Which items really have a photo. Most items leave the image field blank and
+   load code.jpg instead, so the field alone is wrong. The only true answer is
+   whether the file loads. Each file is checked once, a few at a time.
+   photoSeen[file]: true = loads, false = missing, undefined = still checking. */
+var photoSeen = {}, photoWait = [], photoBusy = 0;
+function hasPhoto(it){
+  var f = photoFile(it);
+  return sessionPhotos[f] ? true : photoSeen[f];
+}
+function photosChecking(){ return photoBusy > 0 || photoWait.length > 0; }
+function checkPhotos(){
+  ITEMS.forEach(function(it){
+    var f = photoFile(it);
+    if(f in photoSeen || photoWait.indexOf(f) > -1) return;
+    photoSeen[f] = undefined;
+    photoWait.push(f);
+  });
+  pumpPhotos();
+}
+function pumpPhotos(){
+  while(photoBusy < 8 && photoWait.length){
+    (function(f){
+      var src = photoSrc(f);
+      photoBusy++;
+      /* Over http (Netlify, local server) ask for the headers only, so a check
+         does not download the whole photo. file:// can't fetch, so load it. */
+      if(/^https?:/.test(location.protocol) && src.indexOf('images/') === 0){
+        fetch(src, {method:'HEAD'}).then(function(r){ done(r.ok); }, function(){ done(false); });
+      } else {
+        var img = new Image();
+        img.onload = function(){ done(true); };
+        img.onerror = function(){ done(false); };
+        img.src = src;
+      }
+      function done(ok){
+        photoSeen[f] = ok; photoBusy--;
+        pumpPhotos();
+        if(!photosChecking()) photosChecked();
+      }
+    })(photoWait.shift());
+  }
+}
+/* all checked: refresh the chip count, and the list if it is filtered by photo */
+function photosChecked(){
+  if(state.flag !== 'nophoto'){ renderFilters(); return; }
+  var lp = $('#listpane'), ls = lp.scrollTop;
+  quiet = true; render(); quiet = false;
+  lp.scrollTop = ls;
+}
+
+function openLightbox(){
+  var img = document.querySelector('.dphoto img');
+  if(!img) return;
+  var s = mount('<img src="'+esc(img.getAttribute('src'))+'" alt="'+esc(img.alt)+'">');
+  s.classList.add('lightbox');
+  s.addEventListener('click', function(){ s.remove(); });
+}
+
+document.addEventListener('click', function(e){
+  var c = e.target.closest('[data-copy]');
+  if(c){ copy(c.dataset.copy); return; }
+  var r = e.target.closest('[data-reply]');
+  if(r){
+    var parts = r.dataset.reply.split('|'), rit = itemByCode(parts[0]);
+    if(!rit) return;
+    var rposts = rit.posts || [], ri = +parts[1], one = rposts[ri];
+    var entry = one ? [{l:one, i:ri, many: rposts.length > 1}] : [];
+    copy(replyText(rit, entry), 'Reply copied');
+    return;
+  }
+  var ra = e.target.closest('[data-replyall]');
+  if(ra){
+    var ait = itemByCode(ra.dataset.replyall);
+    if(ait){
+      var aposts = ait.posts || [];
+      var entries = aposts.map(function(l, i){ return {l:l, i:i, many: aposts.length > 1}; });
+      copy(replyText(ait, entries), 'Reply copied');
+    }
+    return;
+  }
+  var ca = e.target.closest('[data-copyall]');
+  if(ca){
+    var cit = itemByCode(ca.dataset.copyall);
+    if(cit) copy((cit.posts||[]).map(function(l){ return l.url; }).join('\n'), 'All links copied');
+    return;
+  }
+  if(e.target.closest('[data-zoom]')){ openLightbox(); return; }
+  var di = e.target.closest('[data-dlimg]');
+  if(di){ downloadPhoto(di.dataset.dlimg); return; }
+  var es = e.target.closest('[data-editstock]');
+  if(es){ openEditor(itemByCode(es.dataset.editstock), false, true); return; }
+  var se = e.target.closest('[data-sheetedit]');
+  if(se){ openInSheet(se.dataset.sheetedit); return; }
+  var ar = e.target.closest('[data-archive]');
+  if(ar){
+    var arit = itemByCode(ar.dataset.archive);
+    if(!arit) return;
+    var rec = recOf(arit); rec.archived = !arit.archived;
+    overlay.items[rec.code] = rec;
+    persist(); rebuild(); render();
+    toast(rec.archived ? 'Archived. Export to keep it' : 'Unarchived');
+    return;
+  }
+  var dl = e.target.closest('[data-delitem]');
+  if(dl){ deleteItem(dl.dataset.delitem); return; }
+  var ed = e.target.closest('[data-edit]');
+  if(ed){ openEditor(itemByCode(ed.dataset.edit)); return; }
+  var dp = e.target.closest('[data-dup]');
+  if(dp){
+    var src = itemByCode(dp.dataset.dup);
+    var cp = JSON.parse(JSON.stringify(src));
+    cp.code = uniqueCode(src.code + '-COPY'); cp._seq = 9999; delete cp._hay;
+    cp.stock = null; cp._appStock = null;   /* a copy is a new item, its stock starts empty */
+    openEditor(cp, true);
+    return;
+  }
+});
+
+/* the saved shape of an item: what goes in the overlay and in items.js.
+   Stock is the app's own copy, never the numbers read from the sheet. */
+function recOf(it){
+  return {code:it.code, name:it.name, series:it.series, sub:it.sub||null, promo:!!it.promo,
+          pack:it.pack, marques:it.marques||[], blvd:it.blvd||null, image:it.image||'',
+          posts:normLinks(it.posts), notes:it.notes||'', archived:!!it.archived,
+          stock:it._appStock || null, _seq:it._seq};
+}
+function deleteItem(code){
+  var it = itemByCode(code);
+  if(!it) return false;
+  if(!confirm('Delete "' + it.name + '" from the index?\n\nIt comes back if you re-import the seed file. Export after to make it stick.')) return false;
+  overlay.removed = (overlay.removed||[]).concat([code]);
+  delete overlay.items[code];
+  persist(); rebuild();
+  if(state.selected === code) state.selected = null;
+  render(); toast('Deleted');
+  return true;
+}
+/* Edit in Sheet: open the sheet on the item's row. Not in the sheet yet: copy the code to paste in a new row. */
+function openInSheet(code){
+  var it = itemByCode(code);
+  if(!sheetCfg.edit){
+    toast('Add the sheet link first');
+    openSheetModal('edit');
+    return;
+  }
+  window.open(sheetEditUrl(it && it._sheetRow), '_blank', 'noopener');
+  if(it && !it._sheetRow) copy(it.code, 'Code copied. Add a row and paste it');
+}
+
+/* Save the item photo out of /images as a real file download.
+   Three routes, tried in order, because a page opened straight off the disk
+   (file://) is not allowed to read its own image bytes in most browsers:
+     1. fetch the file and hand the browser a blob  (works over http)
+     2. draw the already loaded <img> into a canvas and pull the bytes out
+     3. plain download link, which some browsers turn into a new tab
+   Route 3 is the only one that can open a tab, and it says so.
+   Phones go through the share sheet first (see shareRoute). */
+function downloadPhoto(file, noShare){
+  if(!file) return;
+  if(!noShare && canShareFiles() && shareRoute(file)) return;
+  var src = photoSrc(file);
+
+  function grab(href, revoke){
+    var a = document.createElement('a');
+    a.href = href; a.download = file; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    if(revoke) setTimeout(function(){ URL.revokeObjectURL(href); }, 4000);
+  }
+
+  /* 2 - canvas readback off the photo already on screen */
+  function fromCanvas(){
+    var img = document.querySelector('.dphoto img');
+    if(!img || !img.naturalWidth) return false;
+    try{
+      var cv = document.createElement('canvas');
+      cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+      cv.getContext('2d').drawImage(img, 0, 0);
+      var type = /\.png$/i.test(file) ? 'image/png'
+               : /\.webp$/i.test(file) ? 'image/webp' : 'image/jpeg';
+      if(cv.toBlob){
+        cv.toBlob(function(b){
+          if(b){ grab(URL.createObjectURL(b), true); toast('Saved ' + file); }
+          else { grab(src); toast('Saving ' + file); }
+        }, type, 0.95);
+      } else {
+        grab(cv.toDataURL(type, 0.95));
+        toast('Saved ' + file);
+      }
+      return true;
+    }catch(err){ return false; }   /* tainted canvas on file:// */
+  }
+
+  /* 3 - last resort */
+  function plainLink(){
+    grab(src);
+    toast(location.protocol === 'file:'
+      ? 'Opened ' + file + ' \u2014 run the local server to save it as a file'
+      : 'Saving ' + file);
+  }
+
+  /* 1 - fetch to blob, the only route that always keeps the filename */
+  if(typeof fetch === 'function'){
+    fetch(src).then(function(r){
+      if(!r.ok) throw 0;
+      return r.blob();
+    }).then(function(b){
+      grab(URL.createObjectURL(b), true);
+      toast('Saved ' + file);
+    }).catch(function(){
+      if(!fromCanvas()) plainLink();
+    });
+    return;
+  }
+  if(!fromCanvas()) plainLink();
+}
+
+/* Phone: a download link on iPhone only reaches Files. The share sheet has
+   "Save Image", which puts the photo in Photos. The sheet has to open straight
+   from the tap, so the photo bytes are fetched when the item opens, not on tap. */
+var touchMQ = window.matchMedia ? matchMedia('(pointer: coarse)') : null;
+function canShareFiles(){
+  if(!touchMQ || !touchMQ.matches || !navigator.share || !navigator.canShare || typeof File !== 'function') return false;
+  try{ return navigator.canShare({files:[new File([''], 'x.jpg', {type:'image/jpeg'})]}); }catch(e){ return false; }
+}
+var sharePhoto = {src:null, file:null, blob:null, wait:null};
+function prepSharePhoto(file){
+  var src = photoSrc(file);
+  if(sharePhoto.src === src) return sharePhoto.wait;
+  var mine = sharePhoto = {src:src, file:file, blob:null, wait:null};
+  mine.wait = fetch(src).then(function(r){ if(!r.ok) throw 0; return r.blob(); })
+    .then(function(b){ mine.blob = b; return b; }, function(){ return null; });
+  return mine.wait;
+}
+function shareBlob(file, blob){
+  var f = new File([blob], file, {type: blob.type || 'image/jpeg'});
+  if(!navigator.canShare({files:[f]})) return false;
+  navigator.share({files:[f]}).catch(function(err){
+    /* AbortError = the sheet was closed, nothing to say */
+    if(err && err.name === 'NotAllowedError') toast('Photo ready. Tap Save photo again');
+  });
+  return true;
+}
+/* true = handled here (shared, or waiting on the bytes). The download routes take over if sharing can't. */
+function shareRoute(file){
+  var src = photoSrc(file);
+  if(sharePhoto.src === src && sharePhoto.blob) return shareBlob(file, sharePhoto.blob);
+  prepSharePhoto(file).then(function(b){
+    if(!b || !shareBlob(file, b)) downloadPhoto(file, true);
+  });
+  return true;
+}
+
+function copy(t, msg){
+  if(!t) return;
+  navigator.clipboard.writeText(t).then(function(){ toast(msg || 'Copied'); },
+    function(){
+      var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand('copy'); toast(msg||'Copied'); }catch(e){}
+      document.body.removeChild(ta);
+    });
+}
+var toastT;
+function toast(m){
+  var old = document.querySelector('.toast'); if(old) old.remove();
+  var el = document.createElement('div'); el.className = 'toast'; el.textContent = m;
+  document.body.appendChild(el);
+  clearTimeout(toastT); toastT = setTimeout(function(){ el.remove(); }, 1900);
+}
+
+/* ============================================================
+   CODE GENERATOR (same shape as the seed data)
+   ============================================================ */
+var SERIES_TOK = {
+  'Boulevard':'BLVD','Fast & Furious':'FNF','Car Culture':'CC','Pop Culture':'POP',
+  'Team Transport':'TT','Modern Classics':'MC','Japan Historics':'JPNHIST','Terra Trek':'TERRA',
+  'Slide Street':'SLIDE','Circuit Legends':'CIRCUIT','Eurospeed':'EURO','Timeless Icons':'TIMELESS',
+  'Vintage Racing':'VINTAGE','Thrill Climbers':'THRILL','Ronin Run':'RONIN','Mountain Drifters':'MTNDRIFT',
+  'Power Trip':'POWER','Aerostyle':'AERO','Fast Wagons':'WAGONS','Deutscheland Design':'DEUTSCH',
+  'Road Trip':'ROADTRIP','Silhouette':'SILHOUETTE','Hammer Drop':'HAMMER','Off Road':'OFFROAD',
+  'Race Day':'RACEDAY','Speedgraphics':'SPEEDGFX','Garage':'GARAGE','Acceleracers':'ACCEL',
+  'Exotic Envy':'EXOTIC','Kool Kombi':'KOMBI','Barbie':'BARBIE','Formula 1':'F1','Gran Turismo':'GT',
+  'Replay the Classics':'REPLAY','Entertainment':'ENTER','Pantone':'PANTONE','Compact Kings':'COMPACT',
+  'Rally Racers':'RALLY','Mustang Cars':'MUSTANGSET','Surf Up':'SURF','Gulf':'GULF','Graphic Remix':'REMIX',
+  'Performance Trucks':'TRUCKS','Racing Culture':'RACING','Zamac':'ZAMAC','2-Pack':'2PK','5-Pack':'5PK',
+  'Mainline / Basic':'BASIC','Premium':'PREMIUM','Silver':'SILVER','Gold':'GOLD','Canyon Warriors':'CANYON','Sale Post':'SALE','Other':'MISC'
+};
+var PACK_TOK = {'Box':'BOX','Case':'CASE','Set':'SET','5-Pack':'5PK','2-Pack':'','Single':''};
+var STOP = {'hw':1,'the':1,'and':1,'a':1,'of':1,'w':1,'set':1,'box':1,'case':1,'pcs':1,'pc':1,
+            'piece':1,'pieces':1,'only':1,'new':1,'for':1,'with':1};
+
+function genCode(name, series, pack, promo){
+  var s = String(name||'');
+  var blvd = null, m = s.match(/BLVD\s*#?\s*(\d{1,3})/i);
+  if(m) blvd = m[1];
+  var clean = s.replace(/\[[^\]]*\]|DO NOT USE|PLACEHOLDER ONLY/ig,' ')
+               .replace(/[()]/g,' ')
+               .replace(/\bHW\b|\bPROMO\b|\bBLVD\b|\bBoulevard\b/ig,' ')
+               .replace(new RegExp('\\b'+(series||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'),' ')
+               .replace(/\bset of \d+\b|\bbox of \d+\b|\bsealed box\b|\bsealed case\b|\bbox\b|\bcase\b|\bset\b|\bsingles?\b|\bpiece\b/ig,' ')
+               .replace(/[^A-Za-z0-9#'\- ]/g,' ')
+               .replace(/\s+/g,' ').trim();
+  var toks = clean.split(' ').filter(function(t){ return t && !STOP[t.toLowerCase()]; });
+  var key = [];
+  for(var i=0;i<toks.length && key.length<3;i++){
+    var t = toks[i].replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+    if(!t || t === blvd || key.indexOf(t) > -1) continue;
+    key.push(t.slice(0,10));
+  }
+  var parts = ['HW'];
+  if(promo) parts.push('PROMO');
+  parts.push(SERIES_TOK[series] || 'MISC');
+  if(blvd) parts.push(blvd);
+  parts = parts.concat(key);
+  var pt = PACK_TOK[pack] || '';
+  if(pt && parts.indexOf(pt) === -1) parts.push(pt);
+  return parts.filter(Boolean).join('-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,48);
+}
+function uniqueCode(base, ignore){
+  var c = base, n = 1;
+  while(ITEMS.some(function(i){ return i.code === c && i.code !== ignore; })){ n++; c = base + '-' + n; }
+  return c;
+}
+
+/* ============================================================
+   EDITOR
+   ============================================================ */
+var SERIES_LIST = Object.keys(SERIES_TOK).sort();
+var PACK_LIST = ['Single','2-Pack','5-Pack','Set','Box','Case'];
+var draftPreview = null;
+
+function openEditor(item, isNew, focusStock){
+  var it = item ? JSON.parse(JSON.stringify(item)) : {
+    code:'', name:'', series:'Other', sub:null, promo:false, pack:'Single',
+    marques:[], blvd:null, image:'', posts:[], notes:'', archived:false, stock:null, _seq: 9999
+  };
+  var original = it.code;
+  var sheetMode = sheetOn();   /* the sheet owns the numbers: the boxes only show them */
+  draftPreview = null;
+
+  var h = '<div class="modal" role="dialog" aria-modal="true">' +
+    '<div class="mhead"><h2>'+(isNew||!original ? 'New <em>item</em>' : 'Edit <em>item</em>')+'</h2>' +
+    '<button class="tbtn" data-close>Close</button></div><div class="mbody">' +
+    '<div class="fgrid">' +
+      fld('full','Item name (exactly how you write it on the invoice)',
+          '<input id="e_name" value="'+esc(it.name)+'" placeholder="HW BLVD#156 ENZO Ferrari">') +
+      fld('','Series', sel('e_series', SERIES_LIST, it.series)) +
+      fld('','Pack type', sel('e_pack', PACK_LIST, it.pack)) +
+      fld('full','Item code',
+          '<input id="e_code" class="mono" value="'+esc(it.code)+'"'+(original && !isNew ? ' readonly' : '')+'>' +
+          (original && !isNew
+            ? '<span class="hint" id="e_codehint">Locked. The sheet finds this item by its code, so a new code breaks the match. ' +
+              '<button type="button" id="e_unlock" style="color:var(--accent-ink);text-decoration:underline">Unlock</button></span>'
+            : '<span class="hint">Auto-built from the name. Locked after the first save. ' +
+              '<button type="button" id="e_regen" style="color:var(--accent-ink);text-decoration:underline">Rebuild it</button></span>')) +
+      fld('','Promo item', '<select id="e_promo"><option value="0"'+(it.promo?'':' selected')+'>No</option><option value="1"'+(it.promo?' selected':'')+'>Yes</option></select>') +
+      fld('','Car brands (comma separated)', '<input id="e_marques" value="'+esc((it.marques||[]).join(', '))+'" placeholder="Ferrari, Porsche">') +
+      fld('full','Photo file inside /images',
+          '<input id="e_image" class="mono" value="'+esc(it.image)+'" placeholder="'+esc(suggestFile({code: it.code || 'hw-new'}))+'">' +
+          '<div class="drop" id="e_drop"><p>Drop the item photo here</p>' +
+          '<small>It renames the file to the item code and downloads it. Move it into /images.</small></div>' +
+          '<div id="e_prev"></div>') +
+      fld('full','Notes', '<textarea id="e_notes" placeholder="Anything you want to remember about this item">'+esc(it.notes||'')+'</textarea>') +
+    '</div>' +
+    stockFields(it.stock) +
+    '<div class="sect"><h3>Facebook pre-order post links <button class="tbtn" id="e_addlink">+ Add link</button></h3>' +
+      '<p class="hint" style="font-size:13px;color:var(--ink-3);line-height:1.6;margin:10px 0 14px">' +
+      'Give each post a title (e.g. "Batch 2" or "Restock") and paste its Facebook link below it. The title shows on the item and is used when you copy a reply. ' +
+      'Pasting a whole block of links at once splits it into rows.</p>' +
+      '<div id="e_links"></div></div>' +
+    '</div><div class="mfoot">' +
+      (original ? '<button class="tbtn warn" id="e_del">Delete item</button>' : '<span></span>') +
+      '<span style="display:flex;gap:7px"><button class="tbtn" data-close>Cancel</button>' +
+      '<button class="tbtn primary" id="e_save">Save item</button></span>' +
+    '</div></div>';
+
+  var scrim = mount(h);
+
+  function fld(cls, label, inner){
+    return '<div class="f '+cls+'"><label>'+label+'</label>'+inner+'</div>';
+  }
+  function stockFields(st){
+    st = st || {};
+    var d = st.dropped || {};
+    function box(key, label, val, sw){
+      return '<div class="f"><label>'+(sw ? '<i style="--sw:'+sw+'"></i>' : '')+label+'</label>' +
+        '<input type="number" min="0" step="1" inputmode="numeric" data-sk="'+key+'" ' +
+        'value="'+(val == null ? '' : esc(val))+'" placeholder="'+(sheetMode ? '–' : '0')+'"'+(sheetMode ? ' readonly tabindex="-1"' : '')+'></div>';
+    }
+    var hint = sheetMode
+      ? '<div class="sheetnote"><span>These numbers come from the Google Sheet. Change them there.' +
+          (it._sheetRow ? ' Row ' + it._sheetRow + '.' : (original && !isNew) ? ' This code is not in the sheet yet.' : '') + '</span>' +
+          ((original && !isNew) ? '<button type="button" class="tbtn" data-sheetedit="'+esc(original)+'">Edit in Sheet ↗</button>' : '') + '</div>'
+      : '<p class="hint" style="font-size:13px;color:var(--ink-3);line-height:1.6;margin:10px 0 14px">' +
+        'Leave Quantity arrived blank until the item arrives. Upcoming stocks are ordered but not here yet. ' +
+        'Remaining = arrived minus the four tags. Upcoming only changes the "left after" number. ' +
+        'Did not get and Waiting are only shown, they never change Remaining.</p>';
+    /* the Dashboard numbers do not fit these boxes: in sheet mode only point to the sheet */
+    if(sheetMode) return '<div class="sect" id="e_stock"><h3>Stock and miners <span class="scalc" id="e_scalc"></span></h3>' + hint + '</div>';
+    return '<div class="sect" id="e_stock"><h3>Stock and miners <span class="scalc" id="e_scalc"></span></h3>' +
+      hint +
+      '<div class="sgrid three">' +
+        box('arrived', 'Quantity arrived', st.arrived) +
+        box('upcoming', 'Upcoming stocks', st.upcoming) +
+        box('waiting', 'Waiting in line', st.waiting) +
+      '</div>' +
+      '<div class="ssub">Tagged <em>should add up to Quantity arrived</em></div>' +
+      '<div class="sgrid four">' +
+        STOCK_TAGS.map(function(t){ return box(t.k, t.label, st[t.k], t.c); }).join('') +
+      '</div>' +
+      '<div class="ssub">Did not get</div>' +
+      '<div class="sgrid five">' +
+        DROP_TAGS.map(function(t){ return box('dropped.' + t.k, t.label, d[t.k]); }).join('') +
+      '</div></div>';
+  }
+  function sel(id, list, cur){
+    return '<select id="'+id+'">' + list.map(function(o){
+      return '<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>'; }).join('') + '</select>';
+  }
+
+  /* stock: read the number boxes, show the live result next to the heading */
+  var stockBox = scrim.querySelector('#e_stock');
+  function readStock(){
+    var r = {dropped:{}};
+    stockBox.querySelectorAll('[data-sk]').forEach(function(inp){
+      var k = inp.dataset.sk, v = inp.value.trim();
+      if(k.indexOf('dropped.') === 0) r.dropped[k.slice(8)] = v; else r[k] = v;
+    });
+    return cleanStock(r);
+  }
+  function drawCalc(){
+    var so = stockOf({stock: readStock()}), el = scrim.querySelector('#e_scalc');
+    if(!so){ el.className = 'scalc none'; el.textContent = ''; return; }
+    if(so.remaining == null){ el.className = 'scalc none'; el.textContent = so.tagged + ' tagged'; return; }
+    el.className = 'scalc ' + (so.status === 'offer' ? 'left' : so.status);
+    el.textContent = so.status === 'over' ? 'Over by ' + (-so.projected)
+                   : so.status === 'short' ? 'Short ' + (-so.remaining) + ' · ' + so.projected + ' left after'
+                   : (so.remaining === 0 ? 'All tagged' : so.remaining + ' left') +
+                     (so.upcoming ? ' · ' + so.projected + ' after upcoming' : '');
+  }
+  stockBox.addEventListener('input', drawCalc);
+  drawCalc();
+  if(focusStock){
+    setTimeout(function(){
+      stockBox.scrollIntoView({block:'start'});
+      var a = stockBox.querySelector('[data-sk="arrived"]');
+      if(a){ a.focus(); a.select(); }
+    }, 60);
+  }
+
+  var links = normLinks(it.posts);
+  var linkBox = scrim.querySelector('#e_links');
+
+  function drawLinks(focusLast){
+    if(!links.length){
+      linkBox.innerHTML = '<div class="nopost">No post link yet.<br>Paste the Facebook post link to start.</div>';
+      return;
+    }
+    var odd = links.some(function(l){ return l.url && !FB_RE.test(l.url); });
+    linkBox.innerHTML = links.map(function(l, i){
+      var bad = l.url && !FB_RE.test(l.url);
+      return '<div class="plink">' +
+        '<span class="pnum">'+(i+1)+'</span>' +
+        '<div class="pfields">' +
+          '<input class="ptitlein" data-lt="'+i+'" spellcheck="false" value="'+esc(l.title||'')+'" ' +
+            'placeholder="Title, e.g. Batch 2 or Restock">' +
+          '<input'+(bad?' class="bad"':'')+' data-li="'+i+'" spellcheck="false" value="'+esc(l.url||'')+'" ' +
+            'placeholder="https://www.facebook.com/groups/…">' +
+        '</div>' +
+        '<button type="button" data-rm="'+i+'" title="Remove this link">×</button></div>';
+    }).join('') + (odd ? '<div class="linkwarn">One of these does not look like a Facebook link. It still saves.</div>' : '');
+    if(focusLast){
+      var ins = linkBox.querySelectorAll('.plink input.ptitlein');
+      if(ins.length) ins[ins.length-1].focus();
+    }
+  }
+  drawLinks();
+
+  scrim.addEventListener('click', function(e){
+    var rm = e.target.closest('[data-rm]');
+    if(rm){ links.splice(+rm.dataset.rm,1); drawLinks(); }
+  });
+  linkBox.addEventListener('input', function(e){
+    var t = e.target;
+    if(t.dataset && t.dataset.li != null) links[+t.dataset.li].url = t.value.trim();
+    if(t.dataset && t.dataset.lt != null) links[+t.dataset.lt].title = t.value;
+  });
+  /* a block of links pasted into one row fans out into a row each */
+  linkBox.addEventListener('paste', function(e){
+    var t = e.target;
+    if(!t.dataset || t.dataset.li == null) return;
+    var raw = (e.clipboardData || window.clipboardData);
+    var urls = splitLinks(raw ? raw.getData('text') : '');
+    if(urls.length < 2) return;
+    e.preventDefault();
+    var args = [+t.dataset.li, 1].concat(urls.map(function(u){ return {url:u}; }));
+    links.splice.apply(links, args);
+    links = normLinks(links);
+    drawLinks();
+    toast(urls.length + ' links added');
+  });
+  scrim.querySelector('#e_addlink').onclick = function(){
+    links.push({url:'', title:''}); drawLinks(true);
+  };
+
+  function rebuildCode(){
+    var n = scrim.querySelector('#e_name').value;
+    if(!n) return;
+    var c = genCode(n, scrim.querySelector('#e_series').value, scrim.querySelector('#e_pack').value,
+                    scrim.querySelector('#e_promo').value === '1');
+    scrim.querySelector('#e_code').value = uniqueCode(c, original);
+  }
+  var regen = scrim.querySelector('#e_regen');
+  if(regen) regen.onclick = rebuildCode;
+  var unlock = scrim.querySelector('#e_unlock');
+  if(unlock) unlock.onclick = function(){
+    if(!confirm('Change the item code?\n\nThe sheet matches items by code. If this code is already in the sheet, change it there too, or the numbers stop showing.')) return;
+    var ci = scrim.querySelector('#e_code');
+    ci.removeAttribute('readonly'); ci.focus(); ci.select();
+    scrim.querySelector('#e_codehint').textContent = 'Unlocked. Change the code in the sheet too.';
+  };
+  if(!original){
+    ['#e_name','#e_series','#e_pack','#e_promo'].forEach(function(s){
+      scrim.querySelector(s).addEventListener('input', rebuildCode);
+      scrim.querySelector(s).addEventListener('change', rebuildCode);
+    });
+  }
+
+  /* photo drop */
+  var drop = scrim.querySelector('#e_drop');
+  drop.onclick = function(){
+    var fi = document.createElement('input'); fi.type='file'; fi.accept='image/*';
+    fi.onchange = function(){ if(fi.files[0]) takePhoto(fi.files[0]); };
+    fi.click();
+  };
+  ['dragenter','dragover'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function(e){
+    var f = e.dataTransfer.files[0]; if(f) takePhoto(f);
+  });
+  function takePhoto(file){
+    var code = scrim.querySelector('#e_code').value || 'hw-new';
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    if(ext.length > 4) ext = 'jpg';
+    var fname = code.toLowerCase() + '.' + ext;
+    scrim.querySelector('#e_image').value = fname;
+    var url = URL.createObjectURL(file);
+    sessionPhotos[fname] = url;
+    scrim.querySelector('#e_prev').innerHTML =
+      '<div style="margin-top:10px;display:flex;gap:12px;align-items:center">' +
+      '<img src="'+url+'" style="width:112px;height:84px;object-fit:cover;border:1px solid var(--rule-2);border-radius:3px">' +
+      '<div><div class="hint" style="font-size:13px">Saved as <b class="mono">'+esc(fname)+'</b></div>' +
+      '<button type="button" class="tbtn" id="e_dl" style="margin-top:6px">Download renamed copy</button></div></div>';
+    scrim.querySelector('#e_dl').onclick = function(){
+      var a = document.createElement('a'); a.href = url; a.download = fname; a.click();
+      toast('Move it into /images');
+    };
+  }
+
+  scrim.querySelector('#e_save').onclick = function(){
+    var name = scrim.querySelector('#e_name').value.trim();
+    if(!name){ toast('Item name is required'); return; }
+    var code = scrim.querySelector('#e_code').value.trim() ||
+      uniqueCode(genCode(name, scrim.querySelector('#e_series').value, scrim.querySelector('#e_pack').value, false), original);
+    if(code !== original && itemByCode(code)){ toast('Code ' + code + ' is already used'); return; }
+    var rec = {
+      code: code,
+      name: name,
+      series: scrim.querySelector('#e_series').value,
+      sub: it.sub || null,
+      promo: scrim.querySelector('#e_promo').value === '1',
+      pack: scrim.querySelector('#e_pack').value,
+      marques: scrim.querySelector('#e_marques').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+      blvd: it.blvd || null,
+      image: scrim.querySelector('#e_image').value.trim(),
+      posts: normLinks(links),
+      notes: scrim.querySelector('#e_notes').value.trim(),
+      archived: !!it.archived,
+      /* always set, even null, so it overrides the seed copy. Sheet mode keeps the app's own copy as is. */
+      stock: sheetMode ? (it._appStock || null) : readStock(),
+      _seq: it._seq || (ITEMS.length + 1)
+    };
+    if(original && original !== code){ overlay.removed = (overlay.removed||[]).concat([original]); delete overlay.items[original]; }
+    /* a code deleted earlier and now reused (same name, or renamed back) must show again */
+    overlay.removed = (overlay.removed||[]).filter(function(c){ return c !== code; });
+    overlay.items[code] = rec;
+    persist(); rebuild();
+    state.selected = code;
+    scrim.remove(); render();
+    /* new pre-order flow: the code goes into a new row in the sheet */
+    if(sheetMode && (isNew || !original) && !itemByCode(code)._inSheet) copy(code, 'Saved. Code copied for the sheet');
+    else toast('Saved');
+  };
+
+  var del = scrim.querySelector('#e_del');
+  if(del) del.onclick = function(){
+    if(deleteItem(original)) scrim.remove();
+  };
+}
+
+/* ============================================================
+   MODAL HELPER
+   ============================================================ */
+function mount(html){
+  var s = document.createElement('div');
+  s.className = 'scrim';
+  s.innerHTML = html;
+  document.body.appendChild(s);
+  s.addEventListener('click', function(e){
+    if(e.target === s || e.target.closest('[data-close]')) s.remove();
+  });
+  var first = s.querySelector('input,select,textarea');
+  if(first) setTimeout(function(){ first.focus(); }, 40);
+  return s;
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+   ============================================================ */
+function exportFile(){
+  var out = ITEMS.map(function(it){
+    var o = {code:it.code, name:it.name, series:it.series, sub:it.sub||null, promo:!!it.promo,
+            pack:it.pack, marques:it.marques||[], blvd:it.blvd||null, image:it.image||'',
+            posts:normLinks(it.posts), notes:it.notes||'', archived:!!it.archived};
+    /* only items with numbers carry a stock block. Once the sheet is connected it owns them, so none go out. */
+    var st = sheetOn() ? null : cleanStock(it._appStock);
+    if(st) o.stock = st;
+    return o;
+  });
+  var seq = {};
+  ITEMS.forEach(function(x){ seq[x.code] = x._seq; });
+  out.sort(function(a,b){ return (seq[a.code]||0) - (seq[b.code]||0); });
+  var txt = '/* HW ITEM INVENTORY - data file\n' +
+    '   Exported ' + new Date().toISOString().slice(0,16).replace('T',' ') + '\n' +
+    '   Replace data/items.js with this file to make the changes permanent. */\n\n' +
+    'window.HW_ITEMS = ' + JSON.stringify(out, null, 1) + ';\n';
+  var blob = new Blob([txt], {type:'application/javascript'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'items.js'; a.click();
+  toast('Replace data/items.js with it');
+}
+function importFile(){
+  var fi = document.createElement('input'); fi.type = 'file'; fi.accept = '.js,.json,application/json,text/javascript';
+  fi.onchange = function(){
+    var f = fi.files[0]; if(!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try{
+        var t = String(rd.result);
+        var mi = t.match(/window\.HW_ITEMS\s*=\s*([\s\S]*?);\s*$/);
+        var mp = t.match(/window\.HW_POSTS\s*=\s*([\s\S]*?);\s*\n/);
+        var items = mi ? JSON.parse(mi[1]) : JSON.parse(t);
+        if(mp){ /* old file shape - keep its urls so {postId} links survive */
+          JSON.parse(mp[1]).forEach(function(q){ if(q && q.id && q.url) LEGACY_URL[q.id] = q.url; });
+        }
+        if(!Array.isArray(items)) throw new Error('bad');
+        if(!confirm('Import ' + items.length + ' items?\n\nThis replaces what is on screen now.')) return;
+        overlay = {items:{}, removed:[]};
+        items.forEach(function(it, i){ it._seq = i+1; it.posts = normLinks(it.posts); overlay.items[it.code] = it; });
+        persist(); rebuild(); render();
+        toast('Imported ' + items.length + ' items');
+      }catch(e){ toast('Could not read that file'); }
+    };
+    rd.readAsText(f);
+  };
+  fi.click();
+}
+
+function renderDirty(){
+  var b = $('#dirtybar');
+  if(!state.dirty){ b.innerHTML = ''; return; }
+  b.innerHTML = '<div class="dirtybar"><span><b>Unsaved to file</b> &nbsp;Your edits live in this browser only. ' +
+    'Export and replace data/items.js to keep them for good.</span>' +
+    '<span style="display:flex;gap:7px"><button class="tbtn" id="d_reset">Discard</button>' +
+    '<button class="tbtn primary" id="d_exp">Export now</button></span></div>';
+  $('#d_exp').onclick = exportFile;
+  $('#d_reset').onclick = function(){
+    if(!confirm('Discard every edit made in this browser since the last export?')) return;
+    overlay = {items:{}, removed:[]};
+    localStorage.removeItem(LS_KEY);
+    state.dirty = false; state.selected = null;
+    rebuild(); render();
+  };
+}
+
+/* ============================================================
+   GOOGLE SHEET - header pill + connect box (v4)
+   ============================================================ */
+function syncLook(){
+  if(!sheetCfg.csv) return {cls:'sync-off', text:'Connect sheet', sub:'Not connected. Stock numbers come from the app.'};
+  var at = sheetCache ? sheetTime(sheetCache.at) : '';
+  if(SYNC.err) return {cls:'sync-err', text: sheetCache ? (navigator.onLine === false ? 'Offline · ' : 'Sync failed · ') + at : 'Sheet not loaded',
+                       sub: SYNC.err + (sheetCache ? ' Showing the last good copy from ' + at + '.' : '')};
+  if(!sheetCache) return {cls:'sync-busy', text:'Syncing…', sub:'Loading the sheet for the first time.'};
+  return {cls: SYNC.busy ? 'sync-busy' : 'sync-ok', text:'Synced ' + at,
+          sub:'Checks the sheet every 60 seconds, and when you come back to this tab.'};
+}
+function renderSync(){
+  var box = $('#syncbox'), look = syncLook(), iss = sheetIssues();
+  box.className = 'syncbox ' + look.cls + (SYNC.busy && look.cls !== 'sync-busy' ? ' sync-busy' : '');
+  $('#synctext').innerHTML = esc(look.text) +
+    (iss.total ? ' <span class="syncissue" title="'+iss.total+' to check in the sheet">'+iss.total+'</span>' : '');
+  $('#syncpill').title = look.sub + (iss.total ? ' ' + iss.total + ' thing(s) to check in the sheet.' : '');
+}
+
+function openSheetModal(focus){
+  var had = sheetCfg.csv;
+  var h = '<div class="modal" role="dialog" aria-modal="true" data-sheetmodal>' +
+    '<div class="mhead"><h2>Google <em>Sheet</em></h2><button class="tbtn" data-close>Close</button></div>' +
+    '<div class="mbody">' +
+      '<div id="sh_state"></div>' +
+      (location.protocol === 'file:'
+        ? '<p class="shwarn" style="margin-top:12px">This page was opened by double-click. Google does not let the sheet load this way. ' +
+          'Open it through the local server (http://localhost:8777) or the Netlify link.</p>'
+        : '') +
+      '<div id="sh_issues"></div>' +
+      '<div class="sect"><h3>Links</h3>' +
+        '<div class="fgrid" style="margin-top:14px">' +
+          '<div class="f full"><label>CSV link (Publish to web)</label>' +
+            '<input id="sh_csv" class="mono" spellcheck="false" value="'+esc(sheetCfg.csv)+'" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&amp;single=true&amp;output=csv">' +
+            '<div class="shwarn" id="sh_csvwarn"></div>' +
+            '<ol class="shsteps">' +
+              '<li>In the sheet: <b>File &gt; Share &gt; Publish to web</b>.</li>' +
+              '<li>Pick the <b>Dashboard</b> tab, not Entire document (the miner names stay private).</li>' +
+              '<li>Pick <b>Comma-separated values (.csv)</b>, then Publish. Copy the link and paste it here.</li>' +
+            '</ol></div>' +
+          '<div class="f full"><label>Sheet link (the one you edit in)</label>' +
+            '<input id="sh_edit" class="mono" spellcheck="false" value="'+esc(sheetCfg.edit)+'" placeholder="https://docs.google.com/spreadsheets/d/…/edit">' +
+            '<span class="hint">Used by Edit in Sheet. It opens the sheet on the item\'s row. Copy it from the address bar while the Dashboard tab is open.</span></div>' +
+        '</div>' +
+        '<p class="hint" style="font-size:13px;color:var(--ink-3);line-height:1.6;margin-top:16px">' +
+          'Google can take up to 5 minutes to update a published CSV after a change. The links are saved in this browser only.</p>' +
+      '</div>' +
+    '</div><div class="mfoot">' +
+      (had ? '<button class="tbtn warn" id="sh_off">Disconnect</button>' : '<span></span>') +
+      '<span style="display:flex;gap:7px">' +
+        (had ? '<button class="tbtn" id="sh_sync">Refresh now</button>' : '<button class="tbtn" data-close>Cancel</button>') +
+        '<button class="tbtn primary" id="sh_save">'+(had ? 'Save and sync' : 'Connect')+'</button></span>' +
+    '</div></div>';
+  var scrim = mount(h);
+  drawSheetState(scrim);
+  if(focus === 'edit') setTimeout(function(){ scrim.querySelector('#sh_edit').focus(); }, 60);
+
+  var csvIn = scrim.querySelector('#sh_csv');
+  function checkCsv(){
+    var v = csvIn.value.trim(), w = '';
+    if(v && !/^https?:\/\//i.test(v)) w = 'This does not look like a link.';
+    else if(/docs\.google\.com/i.test(v) && /\/edit/i.test(v)) w = 'This is the edit link. Paste it in the second box. The CSV link comes from Publish to web.';
+    else if(/docs\.google\.com/i.test(v) && !/output=csv/i.test(v)) w = 'The link should end with output=csv. Pick Comma-separated values when you publish.';
+    else if(/docs\.google\.com/i.test(v) && !/single=true/i.test(v)) w = 'This looks like the whole file is published. Publish the Dashboard tab only, so the miner names stay private.';
+    scrim.querySelector('#sh_csvwarn').textContent = w;
+  }
+  csvIn.addEventListener('input', checkCsv); checkCsv();
+
+  scrim.querySelector('#sh_save').onclick = function(){
+    var csv = csvIn.value.trim(), edit = scrim.querySelector('#sh_edit').value.trim();
+    if(!/^https?:\/\//i.test(csv)){ toast('Paste the CSV link first'); csvIn.focus(); return; }
+    var urlChanged = csv !== sheetCfg.csv;
+    sheetCfg = {csv:csv, edit:edit}; saveSheetCfg();
+    if(urlChanged){ sheetCache = null; saveSheetCache(); SYNC.err = ''; rebuild(); render(); }
+    scrim.remove();
+    renderSync(); renderDetail();
+    syncSheet(true);
+  };
+  var sy = scrim.querySelector('#sh_sync');
+  if(sy) sy.onclick = function(){ syncSheet(true); };
+  var off = scrim.querySelector('#sh_off');
+  if(off) off.onclick = function(){
+    if(!confirm('Disconnect the Google Sheet?\n\nStock numbers go back to what is saved in the app.')) return;
+    sheetCfg = {csv:'', edit:''}; sheetCache = null; SYNC.err = '';
+    try{ localStorage.setItem(SHEET_CFG_KEY, JSON.stringify({csv:'', edit:'', off:true})); }catch(e){}
+    saveSheetCache();
+    scrim.remove(); rebuild(); render(); renderSync();
+    toast('Sheet disconnected');
+  };
+}
+/* status + things to check, redrawn after each sync while the box is open */
+function drawSheetState(scope){
+  var look = syncLook(), st = scope.querySelector('#sh_state'), is = scope.querySelector('#sh_issues');
+  if(!st) return;
+  var sub = look.sub;
+  if(sheetCache){
+    var matched = 0, withNums = 0;
+    ITEMS.forEach(function(it){ if(it._inSheet){ matched++; if(it.stock) withNums++; } });
+    sub = sheetCache.count + ' rows in the sheet · ' + matched + ' match an item · ' + withNums + ' with numbers. ' + sub;
+  }
+  st.innerHTML = '<div class="shstate ' + look.cls + '"><i class="syncdot"></i><div><b>' + esc(look.text) + '</b><span>' + esc(sub) + '</span></div></div>';
+
+  var iss = sheetIssues(), h = '';
+  if(iss.total){
+    h += '<div class="sect"><h3>Check the sheet <span>' + iss.total + '</span></h3>';
+    if(iss.missing.length){
+      h += '<div class="shissue"><p><b>Column not found.</b> Counted as blank. Check the header text in row 1.</p>' +
+           '<ul class="shlist">' + iss.missing.map(function(m){ return '<li><code>' + esc(m) + '</code></li>'; }).join('') + '</ul></div>';
+    }
+    if(iss.unknown.length){
+      h += '<div class="shissue"><p><b>Code not in the app.</b> Maybe a typo. Fix it in the sheet, or add the item in the app. ' +
+           '<button class="slink" data-copy="' + esc(iss.unknown.map(function(u){ return u.code; }).join('\n')) + '">Copy list</button></p>' +
+           '<ul class="shlist">' + iss.unknown.map(function(u){ return '<li><code>' + esc(u.code) + '</code><span>Row ' + u.row + '</span></li>'; }).join('') + '</ul></div>';
+    }
+    if(iss.dups.length){
+      h += '<div class="shissue"><p><b>Same code on more than one row.</b> The app uses the first row only.</p>' +
+           '<ul class="shlist">' + iss.dups.map(function(d){ return '<li><code>' + esc(d.code) + '</code><span>Row ' + d.row + ' (first on row ' + d.first + ')</span></li>'; }).join('') + '</ul></div>';
+    }
+    if(iss.bad.length){
+      h += '<div class="shissue"><p><b>Not a number.</b> Counted as blank.</p>' +
+           '<ul class="shlist">' + iss.bad.map(function(b){ return '<li><code>' + esc(b.col) + ': ' + esc(b.val) + '</code><span>Row ' + b.row + '</span></li>'; }).join('') + '</ul></div>';
+    }
+    h += '</div>';
+  }
+  is.innerHTML = h;
+}
+
+$('#syncpill').onclick = function(){ openSheetModal(); };
+$('#syncref').onclick = function(){ syncSheet(true); };
+setInterval(function(){ if(!document.hidden) syncSheet(false); }, SHEET_EVERY);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && Date.now() - SYNC.lastTry > 15000) syncSheet(false);
+});
+window.addEventListener('focus', function(){ if(Date.now() - SYNC.lastTry > 15000) syncSheet(false); });
+window.addEventListener('online', function(){ syncSheet(false); });
+window.addEventListener('offline', function(){ renderSync(); });
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+/* search waits for a short pause in typing, then redraws once, without the entrance animation */
+var qTimer = 0;
+function runSearch(){
+  clearTimeout(qTimer); qTimer = 0;
+  var v = $('#q').value;
+  if(v === state.q) return;
+  state.q = v;
+  var dp = $('#detail'), ds = dp.scrollTop;
+  $('#listpane').scrollTop = 0;
+  quiet = true; render(); quiet = false;
+  dp.scrollTop = ds;
+}
+$('#q').addEventListener('input', function(){ clearTimeout(qTimer); qTimer = setTimeout(runSearch, 120); });
+$('#clearq').onclick = function(){ $('#q').value = ''; runSearch(); $('#q').focus(); };
+$('#btnNew').onclick = function(){ openEditor(null, true); };
+$('#btnExport').onclick = exportFile;
+$('#btnImport').onclick = importFile;
+$('#btnTheme').onclick = function(){
+  var cur = document.documentElement.getAttribute('data-theme') ||
+    (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('hw_idx_theme', next); }catch(e){}
+};
+try{
+  var th = localStorage.getItem('hw_idx_theme');
+  if(th) document.documentElement.setAttribute('data-theme', th);
+}catch(e){}
+
+document.addEventListener('keydown', function(e){
+  if(document.querySelector('.scrim')){
+    if(e.key === 'Escape') document.querySelector('.scrim').remove();
+    return;
+  }
+  var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if(!typing && (e.key === '/' || ((e.metaKey||e.ctrlKey) && e.key === 'k'))){
+    e.preventDefault(); $('#q').focus(); $('#q').select(); return;
+  }
+  if(e.key === 'Escape' && typing){ document.activeElement.blur(); return; }
+  var grid = state.view === 'grid';
+  if(e.key === 'Escape' && drawerMode() && state.selected){ closeDrawer(); return; }
+  if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'v' || e.key === 'V')){
+    setView(grid ? 'list' : 'grid'); return;
+  }
+  /* grid: left/right = next card, up/down = one row of cards (one item while the drawer is open) */
+  if(grid && !typing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){
+    e.preventDefault(); stepItem(e.key === 'ArrowRight' ? 1 : -1); return;
+  }
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    var n = grid && !state.selected ? gridCols() : 1;
+    stepItem(e.key === 'ArrowDown' ? n : -n);
+  }
+  if(e.key === 'Enter' && typing && document.activeElement.id === 'q'){
+    runSearch();   /* typed fast and hit Enter: use the full query, not the last redraw */
+    var first = document.querySelector('#list .item');
+    if(first){ select(first.dataset.code); document.activeElement.blur(); }
+  }
+});
+
+render();
+renderDirty();
+renderSync();
+syncSheet(false);
+setTimeout(function(){ $('#q').focus(); }, 120);
+
+})();
+</script>
+</body>
+</html>
