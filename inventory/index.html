@@ -1026,6 +1026,122 @@ select.sortsel{
 @media (prefers-reduced-motion:reduce){
   .card,.as-drawer .detail,.drawerscrim,.cphoto img{transition:none}
 }
+
+/* ============================================================
+   OVERVIEW (added 2026-11-20) - the customer service page.
+   Extra stock to offer is the main list. Ribbon blue = free units nobody mined yet,
+   striped = free but still arriving. Red = over-mined. Orange = invoiced, not paid.
+   ============================================================ */
+.modetog{display:flex;gap:26px;padding:0 28px;border-bottom:1px solid var(--rule)}
+.modetog button{
+  position:relative;padding:12px 0 11px;
+  font-family:var(--font-cond);font-weight:700;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;
+  color:var(--ink-3);transition:color .14s ease;
+}
+.modetog button::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--fire);
+  transform:scaleX(0);transform-origin:left;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.modetog button:hover{color:var(--ink)}
+.modetog button[aria-selected="true"]{color:var(--ink)}
+.modetog button[aria-selected="true"]::after{transform:none}
+.modetog button:focus-visible,.overview button:focus-visible{outline:2px solid var(--c-hold);outline-offset:2px}
+
+.overview{display:none}
+.m-ov .searchwrap,.m-ov .listpane{display:none}
+.m-ov .overview{display:block;flex:1;min-width:0;overflow-y:auto}
+
+.ov{max-width:1380px;padding:30px 28px 72px}
+.ovhead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+  padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.ovhead h2{
+  font-family:var(--font-cond);font-weight:800;text-transform:uppercase;letter-spacing:.005em;
+  font-size:clamp(34px,4.6vw,60px);line-height:.92;font-variant-numeric:tabular-nums;
+}
+.ovhead p{margin-top:10px;max-width:62ch;color:var(--ink-2);font-size:var(--fs-meta)}
+.ovhead .tbtn{flex:none}
+
+.ovgrid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);gap:28px 44px;margin-top:22px;align-items:start}
+
+/* extra stock list */
+.ovtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ovtabs button{
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
+  padding:8px 13px;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-2);transition:.14s ease;
+}
+.ovtabs button:hover{border-color:var(--ink);color:var(--ink)}
+.ovtabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.ovtabs b{font-weight:600;margin-left:4px}
+
+.xrow{
+  display:grid;grid-template-columns:72px minmax(0,1fr) 92px auto;gap:18px;align-items:center;
+  padding:14px 10px 14px 0;border-bottom:1px solid var(--rule);cursor:pointer;position:relative;
+}
+.xrow:hover{background:linear-gradient(90deg,var(--paper-2),transparent 85%)}
+.xrow[aria-current="true"]{background:linear-gradient(90deg,var(--accent-soft),transparent 85%)}
+.xrow[aria-current="true"]::before{content:'';position:absolute;left:-12px;top:10px;bottom:10px;width:3px;background:var(--accent);border-radius:2px}
+.xthumb{width:72px;height:54px;border-radius:3px;overflow:hidden;background:var(--paper-3);display:grid;place-items:center}
+.xthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.xthumb .ph{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3)}
+.xmain{min-width:0}
+.xname{display:block;text-align:left;font-size:var(--fs-name);font-weight:600;line-height:1.3;max-width:100%}
+.xname:hover{color:var(--accent-ink)}
+.xcode{display:block;margin-top:2px;font-size:var(--fs-cap);letter-spacing:.02em;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xbar{display:flex;height:8px;margin-top:10px;border-radius:2px;overflow:hidden;background:var(--paper-3);max-width:520px}
+.xbar i{display:block;min-width:0;transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0s)}
+.xbar .t{background:var(--ink-3);opacity:.4}
+.xbar .f{background:var(--ribbon);background-size:520px 100%}
+.xbar .l{background:repeating-linear-gradient(135deg,var(--c-hold) 0 3px,transparent 3px 6px)}
+.xcap{display:block;margin-top:6px;font-size:var(--fs-cap);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.xcap .arr{color:var(--c-hold)}
+.xnum{text-align:right;line-height:1}
+.xnum b{display:block;font-family:var(--font-cond);font-weight:800;font-size:40px;font-variant-numeric:tabular-nums;color:var(--c-hold)}
+.xnum span{display:block;margin-top:4px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3)}
+.xcopy{padding:8px 11px}
+.ov.still .xbar i{animation:none}
+
+/* side panels: the top rule color says which kind of follow-up it is */
+.ovside{display:flex;flex-direction:column;gap:30px}
+.opanel{border-top:3px solid var(--ink-3);padding-top:14px}
+.opanel.p-over{border-color:var(--bad)}
+.opanel.p-pay{border-color:var(--accent)}
+.opanel h3{font-family:var(--font-cond);font-weight:800;font-size:26px;line-height:1;text-transform:uppercase;letter-spacing:.005em}
+.opanel > p{margin:8px 0 10px;color:var(--ink-2);font-size:var(--fs-meta);line-height:1.5}
+.orow{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:baseline;width:100%;text-align:left;
+  padding:9px 0;border-bottom:1px solid var(--rule);
+}
+.orow:hover .oname{color:var(--accent-ink)}
+.orow[aria-current="true"] .oname{color:var(--accent-ink)}
+.oname{display:block;font-size:14px;font-weight:600;line-height:1.3}
+.osub{display:block;margin-top:2px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.onum{font-family:'Azeret Mono',monospace;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.p-over .onum{color:var(--bad)}
+.p-pay .onum{color:var(--accent-ink)}
+.omore{margin-top:10px;font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.omore:hover{color:var(--accent-ink)}
+.onote{margin-top:10px;font-size:13px;color:var(--ink-3)}
+.ovnone{padding:18px 0;color:var(--ink-3);font-size:var(--fs-meta)}
+
+.ovempty{max-width:520px;margin:12vh auto;padding:0 24px;text-align:center}
+.ovempty h2{font-family:var(--font-cond);font-weight:800;font-size:34px;text-transform:uppercase;line-height:1}
+.ovempty p{margin:12px 0 20px;color:var(--ink-2)}
+
+@media (max-width:1100px){
+  .ovgrid{grid-template-columns:1fr}
+}
+@media (max-width:980px){
+  .m-ov .overview{overflow:visible}
+  .ov{padding:20px 18px 56px}
+  .modetog{padding:0 18px;gap:22px}
+  .xrow{grid-template-columns:56px minmax(0,1fr) auto;gap:12px;padding-right:0}
+  .xthumb{width:56px;height:42px}
+  .xcopy{grid-column:2 / -1;justify-self:start;margin-top:-4px}
+  .xnum b{font-size:32px}
+  .xrow[aria-current="true"]::before{left:-8px}
+}
+@media (prefers-reduced-motion:reduce){
+  .xbar i{animation:none}
+  .modetog button::after{transition:none}
+}
 </style>
 </head>
 <body>
@@ -1055,6 +1171,11 @@ select.sortsel{
       </div>
     </div>
   </header>
+
+  <nav class="modetog" id="modetog" role="tablist" aria-label="Page">
+    <button role="tab" data-mode="items" title="Search items (/)">Items</button>
+    <button role="tab" data-mode="ov" title="Extra stock and follow-ups (O)">Overview</button>
+  </nav>
 
   <div id="dirtybar"></div>
 
@@ -1087,6 +1208,7 @@ select.sortsel{
       </div>
       <div id="list"></div>
     </div>
+    <section class="overview" id="overview" aria-label="Overview"></section>
     <div class="drawerscrim" id="drawerscrim"></div>
     <aside class="detail blank" id="detail"></aside>
   </div>
@@ -1221,10 +1343,14 @@ function sheetStockOf(r){
     waiting:0, dropped:{}, droppedTotal:0, tagged:collection
   };
   s.arrived = entered ? onHand : null;
-  /* stock balance: Total Orders (or Stock On Hand when orders is 0) - Mine Total */
-  s.supply = orders || onHand;
-  s.supplyFrom = orders ? 'ordered' : 'on hand';
-  s.balance = s.supply - s.source;
+  /* stock balance = the sheet's own Stock Status column: Total Orders - Mine Total - Other.
+     More than 0 = extra stock nobody mined yet (free to offer). Less than 0 = over-mined.
+     Older sheets without that column: Total Orders (or Stock On Hand when orders is 0) - Mine Total - Other. */
+  var fromSheet = r.stockStatus != null;
+  s.supply = fromSheet ? orders : (orders || onHand);
+  s.supplyFrom = (fromSheet || orders) ? 'ordered' : 'on hand';
+  s.balance = fromSheet ? r.stockStatus : s.supply - s.source - s.other;
+  s.onHold = r.onHold != null ? r.onHold : s.paidHold + s.semiPaid;
   s.bal = !entered ? 'none' : s.balance > 0 ? 'overstock' : s.balance < 0 ? 'shortstock' : 'complete';
   s.remaining = entered ? (r.remaining != null ? r.remaining : onHand - collection) : null;
   s.projected = entered ? s.remaining + s.upcoming : null;
@@ -1291,7 +1417,8 @@ var SHEET_COLS = [
   {k:'completion', h:['Collection Completion %'], opt:1, pct:1},
   {k:'source', h:['Source Qty']}, {k:'collection', h:['Collection Qty']}, {k:'noAlloc', h:['No Allocation Yet Qty']},
   {k:'invoiced', h:['INVOICED Qty']}, {k:'paid', h:['Paid Qty']}, {k:'paidHold', h:['PAID-HOLD Qty']},
-  {k:'semiPaid', h:['SEMI-PAID Qty']}, {k:'other', h:['Other Qty'], opt:1}, {k:'blank', h:['Blank Qty'], opt:1}
+  {k:'semiPaid', h:['SEMI-PAID Qty']}, {k:'other', h:['Other Qty'], opt:1}, {k:'blank', h:['Blank Qty'], opt:1},
+  {k:'stockStatus', h:['Stock Status'], opt:1}, {k:'onHold', h:['ON-HOLD'], opt:1}
 ];
 
 var sheetCfg = (function(){
@@ -1446,11 +1573,11 @@ function syncSheet(manual){
 /* redraw after a sync without the entrance animations or losing your place */
 var quiet = false;
 function redrawFromSync(){
-  var lp = $('#listpane'), dp = $('#detail');
-  var ls = lp.scrollTop, ds = dp.scrollTop;
+  var lp = $('#listpane'), dp = $('#detail'), op = $('#overview');
+  var ls = lp.scrollTop, ds = dp.scrollTop, os = op.scrollTop;
   rebuild();
   quiet = true; render(); quiet = false;
-  lp.scrollTop = ls; dp.scrollTop = ds;
+  lp.scrollTop = ls; dp.scrollTop = ds; op.scrollTop = os;
 }
 
 function sheetTime(t){
@@ -1518,7 +1645,10 @@ var state = {
   sort:'new', selected:null, dirty:false, view:'grid'
 };
 state.size = 'm';
+/* mode: items (search) or ov (overview). ovPanel = which overview list Prev / Next walks through */
+state.mode = 'items'; state.ovTab = 'all'; state.ovOpen = {}; state.ovPanel = 'x';
 try{
+  if(localStorage.getItem('hw_idx_mode') === 'ov') state.mode = 'ov';
   if(localStorage.getItem('hw_idx_view') === 'list') state.view = 'list';
   var sz = localStorage.getItem('hw_idx_card');
   if(sz === 's' || sz === 'l') state.size = sz;
@@ -1812,13 +1942,14 @@ function render(){
     }
     $('#list').innerHTML = h;
   }
+  if(state.mode === 'ov') renderOverview();
   renderDetail();
 }
 /* Selecting only moves the highlight and redraws the detail pane.
    Rebuilding the whole list here would replay the row animation on every click. */
 function select(code){
   state.selected = code;
-  var rows = document.querySelectorAll('#list .item');
+  var rows = document.querySelectorAll('#list .item, #overview [data-code]');
   for(var i=0;i<rows.length;i++){
     if(rows[i].dataset.code === code) rows[i].setAttribute('aria-current','true');
     else rows[i].removeAttribute('aria-current');
@@ -1836,9 +1967,17 @@ $('#list').addEventListener('click', function(e){
    ============================================================ */
 /* grid view, or any width under 981 (phone, tablet): the item opens as a sheet over the list */
 var narrowMQ = window.matchMedia ? matchMedia('(max-width:980px)') : null;
-function drawerMode(){ return state.view === 'grid' || !!(narrowMQ && narrowMQ.matches); }
+function drawerMode(){ return state.mode === 'ov' || state.view === 'grid' || !!(narrowMQ && narrowMQ.matches); }
+/* the rows Prev / Next walk through: the result list, or the overview list the item was opened from */
+function navRows(){
+  var sel = state.mode === 'ov' ? '#overview [data-ovp="'+state.ovPanel+'"] [data-code]' : '#list .item';
+  return Array.prototype.slice.call(document.querySelectorAll(sel));
+}
 function applyView(){
   $('.app').classList.toggle('v-grid', state.view === 'grid');
+  $('.app').classList.toggle('m-ov', state.mode === 'ov');
+  var mb = document.querySelectorAll('#modetog [data-mode]');
+  for(var j=0;j<mb.length;j++) mb[j].setAttribute('aria-selected', mb[j].dataset.mode === state.mode);
   $('.app').classList.toggle('as-drawer', drawerMode());
   $('#list').dataset.size = state.size;
   var b = document.querySelectorAll('.viewtog button');
@@ -1878,13 +2017,14 @@ $('#viewtog').addEventListener('click', function(e){
 function closeDrawer(){
   var code = state.selected;
   select(null);
-  var el = code && document.querySelector('#list .item[data-code="'+code.replace(/["\\]/g,'\\$&')+'"]');
+  var el = code && navRows().filter(function(r){ return r.dataset.code === code; })[0];
+  if(el && !el.matches('button')) el = el.querySelector('button');
   if(el) el.focus({preventScroll:true});
 }
 function stepItem(n){
-  var rows = Array.prototype.slice.call(document.querySelectorAll('#list .item'));
+  var rows = navRows();
   if(!rows.length) return;
-  var browsing = state.view === 'grid' && !state.selected;
+  var browsing = state.mode !== 'ov' && state.view === 'grid' && !state.selected;
   /* grid with the drawer closed: arrows only move the focus ring, Enter opens the card */
   var cur = browsing ? rows.indexOf(document.activeElement)
                      : rows.findIndex(function(r){ return r.dataset.code === state.selected; });
@@ -1954,13 +2094,13 @@ function renderDetail(){
 
   var h = '';
   if(sheet){
-    var rows = Array.prototype.slice.call(document.querySelectorAll('#list .item'));
+    var rows = navRows();
     var pos = rows.findIndex(function(r){ return r.dataset.code === it.code; });
     h += '<div class="dbar">' +
       '<button data-dstep="-1" title="Previous item (←)"'+(pos <= 0 ? ' disabled' : '')+'>‹ Prev</button>' +
       '<button data-dstep="1" title="Next item (→)"'+(pos === -1 || pos >= rows.length-1 ? ' disabled' : '')+'>Next ›</button>' +
       '<span class="dpos">'+(pos === -1 ? '' : (pos+1)+' of '+rows.length)+'</span>' +
-      '<button class="dclose" data-dclose title="Back to the '+(state.view === 'grid' ? 'grid' : 'list')+' (Esc)">✕ Close</button>' +
+      '<button class="dclose" data-dclose title="Back to the '+(state.mode === 'ov' ? 'overview' : state.view === 'grid' ? 'grid' : 'list')+' (Esc)">✕ Close</button>' +
     '</div>';
   }
   h += '<div class="dwrap'+(quiet ? ' still' : '')+'"><div class="dside">';
@@ -2042,7 +2182,7 @@ function stockHint(it){
   var s = stockOf(it);
   if(!s || s.status === 'none') return '';
   if(s.sheet){
-    if(s.bal === 'overstock') return '<span class="stag overstock" title="'+s.balance+' more '+s.supplyFrom+' than the mine total">+'+s.balance+' over</span>';
+    if(s.bal === 'overstock') return '<span class="stag overstock" title="'+s.balance+' not mined yet, free to offer">+'+s.balance+' extra</span>';
     if(s.bal === 'shortstock') return '<span class="stag shortstock" title="'+(-s.balance)+' more mined than '+s.supplyFrom+'">Short '+(-s.balance)+'</span>';
     return '<span class="stag complete" title="'+s.supply+' '+s.supplyFrom+', '+s.source+' mined">Complete</span>';
   }
@@ -2220,7 +2360,7 @@ function sheetCard(s){
   }
   h += '<div class="sbal">' +
        tile('Invoice', 'on hand \u2212 collected', s.remaining, remTxt, e ? invLabel : 'Stock not entered') +
-       tile('Stock', s.supplyFrom + ' \u2212 mine total', s.balance, balTxt, BAL_LABEL[s.bal]) +
+       tile('Stock', s.supplyFrom + ' \u2212 mine total' + (s.other ? ' \u2212 other' : ''), s.balance, balTxt, BAL_LABEL[s.bal]) +
        '</div>';
 
   /* where the stock comes from */
@@ -2234,7 +2374,8 @@ function sheetCard(s){
   if(e){
     h += tallyHTML(s, COLL_TAGS);
     h += '<div class="sformula"><b>'+sgn(s.onHand)+'</b> on hand − <b>'+s.collection+'</b> collected = <b>'+remTxt+'</b> '+invLabel.toLowerCase();
-    h += '<span class="upline"><b>'+sgn(s.supply)+'</b> '+s.supplyFrom+' − <b>'+s.source+'</b> mine total = <b>'+
+    h += '<span class="upline"><b>'+sgn(s.supply)+'</b> '+s.supplyFrom+' − <b>'+s.source+'</b> mine total' +
+         (s.other ? ' − <b>'+s.other+'</b> other' : '') + ' = <b>'+
          balTxt+'</b> '+BAL_LABEL[s.bal].toLowerCase()+'</span>';
     h += '</div>';
     if(s.bal === 'shortstock'){
@@ -3073,6 +3214,8 @@ function syncLook(){
           sub:'Checks the sheet every 60 seconds, and when you come back to this tab.'};
 }
 function renderSync(){
+  var oa = document.getElementById('ovAt');
+  if(oa && sheetCache) oa.textContent = sheetTime(sheetCache.at);
   var box = $('#syncbox'), look = syncLook(), iss = sheetIssues();
   box.className = 'syncbox ' + look.cls + (SYNC.busy && look.cls !== 'sync-busy' ? ' sync-busy' : '');
   $('#synctext').innerHTML = esc(look.text) +
@@ -3198,6 +3341,183 @@ window.addEventListener('focus', function(){ if(Date.now() - SYNC.lastTry > 1500
 window.addEventListener('online', function(){ syncSheet(false); });
 window.addEventListener('offline', function(){ renderSync(); });
 
+
+/* ============================================================
+   OVERVIEW (added 2026-11-20)
+   For customer service (Jelo, Danrome): what is left to offer, and what needs a follow-up.
+   Every number comes from the Dashboard tab, as the sheet computes it.
+     Extra stock     = Stock Status more than 0 (Total Orders - Mine Total - Other).
+                       In hand = the part Stock On Hand already covers, the rest is still arriving.
+     Over-mined      = Stock Status less than 0, on items with stock entered.
+     Not invoiced    = No Allocation Yet Qty, on items with stock entered.
+     Waiting payment = INVOICED Qty (invoice sent, not paid yet).
+   ============================================================ */
+var OV_SHOW = 8;
+function fmt(n){ return Number(n || 0).toLocaleString('en-US'); }
+function ovData(){
+  var d = {x:[], over:[], noinv:[], pay:[], skipN:0, skipQty:0};
+  ITEMS.forEach(function(it){
+    var s = stockOf(it);
+    if(!s || !s.sheet) return;
+    if(s.entered && s.balance > 0){
+      var room = s.onHand - (s.supply - s.balance);   /* on hand minus everything taken */
+      var now = Math.max(0, Math.min(s.balance, room));
+      d.x.push({it:it, s:s, n:s.balance, now:now, later:s.balance - now});
+    }
+    if(s.entered && s.balance < 0) d.over.push({it:it, s:s, n:-s.balance});
+    if(s.noAlloc > 0){
+      if(s.entered) d.noinv.push({it:it, s:s, n:s.noAlloc});
+      else { d.skipN++; d.skipQty += s.noAlloc; }
+    }
+    if(s.invoiced > 0) d.pay.push({it:it, s:s, n:s.invoiced});
+  });
+  function big(a, b){ return b.n - a.n || b.it._seq - a.it._seq; }
+  d.x.sort(big); d.over.sort(big); d.noinv.sort(big); d.pay.sort(big);
+  return d;
+}
+function sum(list, k){ return list.reduce(function(t, r){ return t + r[k || 'n']; }, 0); }
+function plural(n, one, many){ return fmt(n) + ' ' + (n === 1 ? one : many); }
+function ovTabRows(d){
+  return d.x.filter(function(r){
+    return state.ovTab === 'now' ? !r.later : state.ovTab === 'later' ? r.later > 0 : true;
+  });
+}
+function arrivingNote(r){
+  if(!r.later) return '';
+  return r.now ? ' (' + r.now + ' in hand, ' + r.later + ' arriving)' : ' (arriving)';
+}
+/* one item, ready to paste into Messenger */
+function offerText(r){
+  var links = r.it.posts || [];
+  var t = r.it.name + '\nItem code: ' + r.it.code + '\nAvailable: ' + r.n + ' pcs' + arrivingNote(r);
+  links.forEach(function(l, i){ t += '\n' + postLabel(l, i, links.length > 1) + ': ' + l.url; });
+  return t;
+}
+/* the whole list (current tab), for the group chat */
+function offerListText(rows){
+  var day = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  return 'Extra stock, free to offer (' + day + ')\n' +
+    rows.map(function(r){ return '- ' + r.it.name + ': ' + r.n + ' pcs' + arrivingNote(r); }).join('\n');
+}
+
+function renderOverview(){
+  var el = $('#overview');
+  if(!sheetOn()){
+    var loading = sheetCfg.csv && SYNC.busy;
+    el.innerHTML = '<div class="ovempty"><h2>'+(loading ? 'Loading the sheet' : 'No sheet numbers yet')+'</h2>' +
+      '<p>'+(loading ? 'The overview shows up once the Dashboard tab loads.'
+                     : 'The overview reads the Dashboard tab of the Google Sheet. Connect it to see extra stock and follow-ups.')+'</p>' +
+      (loading ? '' : '<button class="tbtn primary" data-ovconnect>Connect sheet</button>') + '</div>';
+    return;
+  }
+  var d = ovData(), rows = ovTabRows(d), free = sum(d.x);
+  var nNow = d.x.filter(function(r){ return !r.later; }).length;
+  var h = '<div class="ov'+(quiet ? ' still' : '')+'">';
+
+  h += '<header class="ovhead"><div>' +
+       '<h2>'+(free ? plural(free, 'piece', 'pieces')+' free to offer' : 'No extra stock right now')+'</h2>' +
+       '<p>'+(d.x.length ? plural(d.x.length, 'item has', 'items have')+' stock nobody has mined yet. Pass these on to other customers. ' : '') +
+       'Numbers from the Dashboard tab, synced <span id="ovAt">'+esc(sheetTime(sheetCache.at))+'</span>.</p></div>' +
+       (rows.length ? '<button class="tbtn primary" data-ovcopyall>Copy list</button>' : '') +
+       '</header>';
+
+  h += '<div class="ovgrid"><section aria-label="Extra stock to offer">';
+  h += '<div class="ovtabs" role="group" aria-label="Show">' +
+       [['all', 'All', d.x.length], ['now', 'In hand', nNow], ['later', 'Arriving', d.x.length - nNow]].map(function(t){
+         return '<button data-ovtab="'+t[0]+'" aria-pressed="'+(state.ovTab === t[0])+'">'+t[1]+'<b>'+t[2]+'</b></button>';
+       }).join('') + '</div>';
+  h += '<div data-ovp="x">';
+  if(!rows.length) h += '<div class="ovnone">Nothing here. Try All.</div>';
+  rows.forEach(function(r, i){
+    var it = r.it, s = r.s, taken = s.supply - r.n;
+    var dl = quiet ? '' : ' style="--d:'+(Math.min(i, 14) * 0.035)+'s"';   /* bars grow one after another, first open only */
+    h += '<div class="xrow" data-code="'+esc(it.code)+'"'+(state.selected === it.code ? ' aria-current="true"' : '')+'>' +
+      '<span class="xthumb"><img src="'+esc(photoSrc(photoFile(it)))+'" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;ph&quot;>—</span>\'"></span>' +
+      '<div class="xmain">' +
+        '<button class="xname" data-ovopen>'+esc(it.name)+'</button>' +
+        '<span class="xcode mono">'+esc(it.code)+'</span>' +
+        '<div class="xbar"'+dl+' role="img" aria-label="'+taken+' taken, '+r.now+' free in hand, '+r.later+' free arriving, of '+s.supply+' ordered">' +
+          (taken > 0 ? '<i class="t" style="flex:'+taken+'"></i>' : '') +
+          (r.now ? '<i class="f" style="flex:'+r.now+'"></i>' : '') +
+          (r.later ? '<i class="l" style="flex:'+r.later+'"></i>' : '') +
+        '</div>' +
+        '<span class="xcap mono">'+fmt(taken)+' taken of '+fmt(s.supply)+' ordered' +
+          (r.later ? ', <span class="arr">'+fmt(r.later)+' still arriving</span>' : '')+'</span>' +
+      '</div>' +
+      '<div class="xnum"><b>'+fmt(r.n)+'</b><span>free</span></div>' +
+      '<button class="tbtn xcopy" data-ovcopy="'+esc(it.code)+'" title="Copy name, pieces and post link">Copy</button>' +
+    '</div>';
+  });
+  h += '</div></section>';
+
+  h += '<aside class="ovside">';
+  h += panel('over', 'p-over', 'Over-mined',
+    d.over.length ? plural(sum(d.over), 'piece', 'pieces')+' mined over the stock, on '+plural(d.over.length, 'item', 'items')+'. Tell the extra miners they did not get, or order more.'
+                  : 'No item has more miners than stock.',
+    d.over, function(r){ return fmt(r.s.supply)+' ordered, '+fmt(r.s.supply + r.n)+' taken'; }, function(r){ return '−' + fmt(r.n); });
+  h += panel('noinv', 'p-noinv', 'Not invoiced yet',
+    d.noinv.length ? plural(sum(d.noinv), 'mined piece has', 'mined pieces have')+' no invoice yet, on '+plural(d.noinv.length, 'item', 'items')+'.'
+                   : 'Every mined piece has an invoice.',
+    d.noinv, function(r){ return fmt(r.s.source)+' mined, '+fmt(r.s.collection)+' invoiced or paid'; }, function(r){ return fmt(r.n); },
+    d.skipN ? 'Left out: '+plural(d.skipN, 'item', 'items')+' with no stock numbers in the sheet ('+fmt(d.skipQty)+' pieces).' : '');
+  h += panel('pay', 'p-pay', 'Waiting for payment',
+    d.pay.length ? plural(sum(d.pay), 'invoiced piece is', 'invoiced pieces are')+' not paid yet, on '+plural(d.pay.length, 'item', 'items')+'.'
+                 : 'Every invoice is paid.',
+    d.pay, function(r){ return pct(r.s.completion)+' paid'; }, function(r){ return fmt(r.n); });
+  h += '</aside></div></div>';
+  el.innerHTML = h;
+
+  function panel(key, cls, title, lead, list, sub, num, note){
+    var open = state.ovOpen[key], show = open ? list : list.slice(0, OV_SHOW);
+    var o = '<section class="opanel '+cls+'" aria-label="'+title+'"><h3>'+title+'</h3><p>'+lead+'</p><div data-ovp="'+key+'">';
+    show.forEach(function(r){
+      o += '<button class="orow" data-code="'+esc(r.it.code)+'"'+(state.selected === r.it.code ? ' aria-current="true"' : '')+'>' +
+           '<span><span class="oname">'+esc(r.it.name)+'</span><span class="osub">'+sub(r)+'</span></span>' +
+           '<span class="onum">'+num(r)+'</span></button>';
+    });
+    o += '</div>';
+    if(list.length > OV_SHOW) o += '<button class="omore" data-ovmore="'+key+'">'+(open ? 'Show fewer' : 'Show all '+list.length)+'</button>';
+    if(note) o += '<p class="onote">'+note+'</p>';
+    return o + '</section>';
+  }
+}
+
+function setMode(m){
+  if(m === state.mode) return;
+  state.mode = m;
+  try{ localStorage.setItem('hw_idx_mode', m); }catch(e){}
+  applyView();
+  render();
+  if(m === 'ov') $('#overview').scrollTop = 0;
+}
+$('#modetog').addEventListener('click', function(e){
+  var b = e.target.closest('[data-mode]');
+  if(b) setMode(b.dataset.mode);
+});
+$('#overview').addEventListener('click', function(e){
+  var t;
+  if(e.target.closest('[data-ovconnect]')){ openSheetModal(); return; }
+  if((t = e.target.closest('[data-ovtab]'))){
+    state.ovTab = t.dataset.ovtab; renderOverview(); return;
+  }
+  if((t = e.target.closest('[data-ovmore]'))){
+    state.ovOpen[t.dataset.ovmore] = !state.ovOpen[t.dataset.ovmore];
+    quiet = true; renderOverview(); quiet = false; return;
+  }
+  var d = ovData();
+  if(e.target.closest('[data-ovcopyall]')){
+    copy(offerListText(ovTabRows(d)), 'List copied'); return;
+  }
+  if((t = e.target.closest('[data-ovcopy]'))){
+    var r = d.x.filter(function(x){ return x.it.code === t.dataset.ovcopy; })[0];
+    if(r) copy(offerText(r), 'Copied ' + r.it.code);
+    return;
+  }
+  var row = e.target.closest('[data-code]');
+  if(!row) return;
+  state.ovPanel = row.closest('[data-ovp]').dataset.ovp;
+  select(row.dataset.code);
+});
 /* ============================================================
    WIRING
    ============================================================ */
@@ -3237,21 +3557,27 @@ document.addEventListener('keydown', function(e){
   }
   var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(!typing && (e.key === '/' || ((e.metaKey||e.ctrlKey) && e.key === 'k'))){
-    e.preventDefault(); $('#q').focus(); $('#q').select(); return;
+    e.preventDefault(); setMode('items'); $('#q').focus(); $('#q').select(); return;
+  }
+  var ov = state.mode === 'ov';
+  if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'o' || e.key === 'O')){
+    setMode(ov ? 'items' : 'ov'); return;
   }
   if(e.key === 'Escape' && typing){ document.activeElement.blur(); return; }
   var grid = state.view === 'grid';
   if(e.key === 'Escape' && drawerMode() && state.selected){ closeDrawer(); return; }
-  if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'v' || e.key === 'V')){
+  /* overview with nothing open: the arrows scroll the page */
+  if(ov && !state.selected) return;
+  if(!ov && !typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'v' || e.key === 'V')){
     setView(grid ? 'list' : 'grid'); return;
   }
   /* grid: left/right = next card, up/down = one row of cards (one item while the drawer is open) */
-  if(grid && !typing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){
+  if((grid || ov) && !typing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){
     e.preventDefault(); stepItem(e.key === 'ArrowRight' ? 1 : -1); return;
   }
   if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
     e.preventDefault();
-    var n = grid && !state.selected ? gridCols() : 1;
+    var n = grid && !ov && !state.selected ? gridCols() : 1;
     stepItem(e.key === 'ArrowDown' ? n : -n);
   }
   if(e.key === 'Enter' && typing && document.activeElement.id === 'q'){
