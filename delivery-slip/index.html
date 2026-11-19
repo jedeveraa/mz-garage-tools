@@ -169,12 +169,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tbtn.busy:disabled{background:var(--ink);border-color:var(--ink);color:var(--paper);opacity:1}
 .tbtn .arrow{transition:transform .16s ease}
 .tbtn:hover:not(:disabled) .arrow{transform:translateX(3px)}
-.link-btn{
-  background:none;border:0;padding:0;cursor:pointer;
-  font-family:var(--mono);font-size:var(--fs-cap);letter-spacing:var(--ls-cap);text-transform:uppercase;color:var(--ink-3);
-  border-bottom:1px dashed var(--rule-2);
-}
-.link-btn:hover{color:var(--accent-ink);border-color:var(--accent)}
 
 /* ---------- Layout ---------- */
 .layout{
@@ -559,7 +553,8 @@ pre#out.empty::first-line{font-weight:400}
 .sheet-set input{font-size:var(--fs-meta);padding:10px 11px;background:var(--paper)}
 .sheet-set .hint{margin:0}
 .foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.foot-actions{display:flex;gap:16px;align-items:center}
+.foot-actions{flex:1 0 100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foot-actions .tbtn{width:100%;min-height:44px;font-size:var(--fs-cap)}
 .keys-hint{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--mono);font-size:var(--fs-cap);letter-spacing:.04em;color:var(--ink-3)}
 .kbd{border:1px solid var(--rule-2);border-radius:3px;padding:2px 6px;background:var(--paper-2);color:var(--ink-2)}
 .slip-foot > .foot-row{padding-top:12px;border-top:1px solid var(--rule)}
@@ -721,8 +716,8 @@ pre#out.empty::first-line{font-weight:400}
         <div class="foot-row">
           <span class="keys-hint"><span class="kbd">&#8984;/Ctrl+Enter</span> copy <span class="kbd">+Shift</span> add</span>
           <div class="foot-actions">
-            <button class="link-btn" id="sheet-open" type="button">Sheet settings</button>
-            <button class="link-btn" id="reset" type="button">Clear form</button>
+            <button class="tbtn" id="sheet-open" type="button">Sheet settings</button>
+            <button class="tbtn" id="reset" type="button">Clear form</button>
           </div>
         </div>
       </div>
