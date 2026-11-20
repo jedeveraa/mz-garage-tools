@@ -1047,96 +1047,132 @@ select.sortsel{
 
 .overview{display:none}
 .m-ov .searchwrap,.m-ov .listpane{display:none}
-.m-ov .overview{display:block;flex:1;min-width:0;overflow-y:auto}
+/* re-layout 2026-11-20: the overview fits one screen. The page does not scroll,
+   each column scrolls its own list, so the totals and the follow-up counts stay in view. */
+.m-ov .overview{display:block;flex:1;min-width:0;min-height:0;overflow:hidden}
 
-.ov{max-width:1380px;padding:30px 28px 72px}
-.ovhead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
-  padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.ov{height:100%;max-width:1480px;padding:22px 28px 0;display:grid;
+  grid-template-columns:minmax(0,1.7fr) minmax(340px,1fr);gap:0 36px;min-height:0}
+.ovmain,.ovside{display:flex;flex-direction:column;min-height:0;min-width:0}
+
+/* left column head: total + what it means + list filters */
 .ovhead h2{
   font-family:var(--font-cond);font-weight:800;text-transform:uppercase;letter-spacing:.005em;
-  font-size:clamp(34px,4.6vw,60px);line-height:.92;font-variant-numeric:tabular-nums;
+  font-size:clamp(30px,3vw,44px);line-height:.95;font-variant-numeric:tabular-nums;
 }
-.ovhead p{margin-top:10px;max-width:62ch;color:var(--ink-2);font-size:var(--fs-meta)}
-.ovhead .tbtn{flex:none}
-
-.ovgrid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);gap:28px 44px;margin-top:22px;align-items:start}
-
-/* extra stock list */
-.ovtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ovhead p{margin-top:6px;max-width:70ch;color:var(--ink-2);font-size:13px;line-height:1.45}
+.ovtools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+.ovtools .tbtn{margin-left:auto;padding:7px 12px}
+.ovtabs{display:flex;gap:6px;flex-wrap:wrap}
 .ovtabs button{
-  font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;
-  padding:8px 13px;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-2);transition:.14s ease;
+  font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);letter-spacing:.06em;text-transform:uppercase;
+  padding:6px 11px;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-2);transition:.14s ease;
 }
 .ovtabs button:hover{border-color:var(--ink);color:var(--ink)}
 .ovtabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .ovtabs b{font-weight:600;margin-left:4px}
 
+/* the scrolling lists */
+.ovscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px;
+  scrollbar-width:thin;scrollbar-color:var(--rule-2) transparent}
+.ovscroll:focus-visible{outline:2px solid var(--c-hold);outline-offset:-2px}
+
+/* extra stock row, one line: photo | name + code | taken bar | free number | copy */
 .xrow{
-  display:grid;grid-template-columns:72px minmax(0,1fr) 92px auto;gap:18px;align-items:center;
-  padding:14px 10px 14px 0;border-bottom:1px solid var(--rule);cursor:pointer;position:relative;
+  display:grid;grid-template-columns:48px minmax(0,1.3fr) minmax(120px,1fr) 58px auto;gap:16px;align-items:center;
+  padding:9px 10px 9px 12px;border-bottom:1px solid var(--rule);cursor:pointer;
 }
 .xrow:hover{background:linear-gradient(90deg,var(--paper-2),transparent 85%)}
-.xrow[aria-current="true"]{background:linear-gradient(90deg,var(--accent-soft),transparent 85%)}
-.xrow[aria-current="true"]::before{content:'';position:absolute;left:-12px;top:10px;bottom:10px;width:3px;background:var(--accent);border-radius:2px}
-.xthumb{width:72px;height:54px;border-radius:3px;overflow:hidden;background:var(--paper-3);display:grid;place-items:center}
+.xrow[aria-current="true"]{background:linear-gradient(90deg,var(--accent-soft),transparent 85%);box-shadow:inset 3px 0 0 var(--accent)}
+.xthumb{width:48px;height:36px;border-radius:3px;overflow:hidden;background:var(--paper-3);display:grid;place-items:center}
 .xthumb img{width:100%;height:100%;object-fit:cover;display:block}
 .xthumb .ph{font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3)}
 .xmain{min-width:0}
-.xname{display:block;text-align:left;font-size:var(--fs-name);font-weight:600;line-height:1.3;max-width:100%}
+.xname{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+  text-align:left;font-size:15px;font-weight:600;line-height:1.25;max-width:100%}
 .xname:hover{color:var(--accent-ink)}
 .xcode{display:block;margin-top:2px;font-size:var(--fs-cap);letter-spacing:.02em;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.xbar{display:flex;height:8px;margin-top:10px;border-radius:2px;overflow:hidden;background:var(--paper-3);max-width:520px}
+.xmeter{min-width:0}
+.xbar{display:flex;height:6px;border-radius:2px;overflow:hidden;background:var(--paper-3)}
 .xbar i{display:block;min-width:0;transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0s)}
 .xbar .t{background:var(--ink-3);opacity:.4}
 .xbar .f{background:var(--ribbon);background-size:520px 100%}
 .xbar .l{background:repeating-linear-gradient(135deg,var(--c-hold) 0 3px,transparent 3px 6px)}
-.xcap{display:block;margin-top:6px;font-size:var(--fs-cap);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.xcap{display:block;margin-top:5px;font-size:var(--fs-cap);line-height:1.3;color:var(--ink-3);font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xcap .arr{color:var(--c-hold)}
 .xnum{text-align:right;line-height:1}
-.xnum b{display:block;font-family:var(--font-cond);font-weight:800;font-size:40px;font-variant-numeric:tabular-nums;color:var(--c-hold)}
-.xnum span{display:block;margin-top:4px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3)}
-.xcopy{padding:8px 11px}
+.xnum b{display:block;font-family:var(--font-cond);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums;color:var(--c-hold)}
+.xnum span{display:block;margin-top:2px;font-family:'Azeret Mono',monospace;font-size:10px;color:var(--ink-3)}
+.xcopy{padding:6px 10px}
 .ov.still .xbar i{animation:none}
 
-/* side panels: the top rule color says which kind of follow-up it is */
-.ovside{display:flex;flex-direction:column;gap:30px}
-.opanel{border-top:3px solid var(--ink-3);padding-top:14px}
-.opanel.p-over{border-color:var(--bad)}
-.opanel.p-pay{border-color:var(--accent)}
-.opanel h3{font-family:var(--font-cond);font-weight:800;font-size:26px;line-height:1;text-transform:uppercase;letter-spacing:.005em}
-.opanel > p{margin:8px 0 10px;color:var(--ink-2);font-size:var(--fs-meta);line-height:1.5}
+/* right column: the three follow-ups share one list. The tabs carry the counts,
+   their top rule color says which kind it is. */
+.ovside{border-left:1px solid var(--rule);padding-left:28px}
+.ostabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ostab{
+  display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+  padding:9px 10px 10px;border:1px solid var(--rule);border-top:3px solid var(--ink-3);border-radius:3px;
+  color:var(--ink-2);transition:background .14s ease,border-color .14s ease;
+}
+.ostab.p-over{border-top-color:var(--bad)}
+.ostab.p-pay{border-top-color:var(--accent)}
+.ostab:hover{background:var(--paper-2)}
+.ostab[aria-selected="true"]{background:var(--paper-2);border-color:var(--rule-2);color:var(--ink)}
+.ostab.p-over[aria-selected="true"]{border-top-color:var(--bad)}
+.ostab.p-noinv[aria-selected="true"]{border-top-color:var(--ink-3)}
+.ostab.p-pay[aria-selected="true"]{border-top-color:var(--accent)}
+.ostt{font-family:var(--font-cond);font-weight:700;font-size:15px;line-height:1.05;text-transform:uppercase;letter-spacing:.01em}
+.ostab b{margin-top:auto;padding-top:6px;font-family:var(--font-cond);font-weight:800;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ostab.p-over b{color:var(--bad)}
+.ostab.p-pay b{color:var(--accent-ink)}
+.ostn{margin-top:3px;font-family:'Azeret Mono',monospace;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.olead{margin:12px 0 0;padding-bottom:12px;border-bottom:1px solid var(--rule);color:var(--ink-2);font-size:13px;line-height:1.45}
 .orow{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:baseline;width:100%;text-align:left;
-  padding:9px 0;border-bottom:1px solid var(--rule);
+  padding:8px 10px 8px 12px;border-bottom:1px solid var(--rule);
 }
+.orow:hover{background:linear-gradient(90deg,var(--paper-2),transparent 85%)}
 .orow:hover .oname{color:var(--accent-ink)}
+.orow[aria-current="true"]{background:linear-gradient(90deg,var(--accent-soft),transparent 85%);box-shadow:inset 3px 0 0 var(--accent)}
 .orow[aria-current="true"] .oname{color:var(--accent-ink)}
 .oname{display:block;font-size:14px;font-weight:600;line-height:1.3}
 .osub{display:block;margin-top:2px;font-family:'Azeret Mono',monospace;font-size:var(--fs-cap);color:var(--ink-3);font-variant-numeric:tabular-nums}
 .onum{font-family:'Azeret Mono',monospace;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .p-over .onum{color:var(--bad)}
 .p-pay .onum{color:var(--accent-ink)}
-.omore{margin-top:10px;font-family:'Azeret Mono',monospace;font-size:var(--fs-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
-.omore:hover{color:var(--accent-ink)}
-.onote{margin-top:10px;font-size:13px;color:var(--ink-3)}
-.ovnone{padding:18px 0;color:var(--ink-3);font-size:var(--fs-meta)}
+.onote{margin-top:10px;padding-left:12px;font-size:13px;color:var(--ink-3)}
+.ovnone{padding:18px 12px;color:var(--ink-3);font-size:var(--fs-meta)}
 
 .ovempty{max-width:520px;margin:12vh auto;padding:0 24px;text-align:center}
 .ovempty h2{font-family:var(--font-cond);font-weight:800;font-size:34px;text-transform:uppercase;line-height:1}
 .ovempty p{margin:12px 0 20px;color:var(--ink-2)}
 
-@media (max-width:1100px){
-  .ovgrid{grid-template-columns:1fr}
+/* medium width: the taken caption goes, the bar stays */
+@media (max-width:1240px){
+  .ov{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:0 24px;padding:20px 22px 0}
+  .ovside{padding-left:22px}
+  .xrow{grid-template-columns:44px minmax(0,1.4fr) minmax(90px,.8fr) 52px auto;gap:12px}
+  .xthumb{width:44px;height:33px}
+  .xcap{white-space:normal}
+}
+/* phone, tablet, or a very short window: one column and the page scrolls again,
+   but the follow-ups are still one list, not three */
+@media (max-width:980px), (max-height:560px){
+  .m-ov .overview{overflow:visible}
+  .ov{height:auto;display:block;padding:20px 18px 56px}
+  .ovscroll{overflow:visible;padding-bottom:0}
+  .ovside{border-left:0;padding-left:0;margin-top:34px}
 }
 @media (max-width:980px){
-  .m-ov .overview{overflow:visible}
-  .ov{padding:20px 18px 56px}
   .modetog{padding:0 18px;gap:22px}
-  .xrow{grid-template-columns:56px minmax(0,1fr) auto;gap:12px;padding-right:0}
-  .xthumb{width:56px;height:42px}
-  .xcopy{grid-column:2 / -1;justify-self:start;margin-top:-4px}
-  .xnum b{font-size:32px}
-  .xrow[aria-current="true"]::before{left:-8px}
+  .xrow{grid-template-columns:44px minmax(0,1fr) auto;gap:6px 12px;padding:12px 0 12px 10px}
+  .xthumb{width:44px;height:33px;grid-row:1 / 3;align-self:start}
+  .xmeter{grid-column:2;grid-row:2}
+  .xnum{grid-column:3;grid-row:1}
+  .xcopy{grid-column:3;grid-row:2;justify-self:end}
+  .xcap{white-space:normal}
 }
 @media (prefers-reduced-motion:reduce){
   .xbar i{animation:none}
@@ -1649,7 +1685,7 @@ var state = {
 };
 state.size = 'm';
 /* mode: items (search) or ov (overview). ovPanel = which overview list Prev / Next walks through */
-state.mode = 'items'; state.ovTab = 'all'; state.ovOpen = {}; state.ovPanel = 'x';
+state.mode = 'items'; state.ovTab = 'all'; state.ovSide = 'over'; state.ovPanel = 'x';
 try{
   if(localStorage.getItem('hw_idx_mode') === 'ov') state.mode = 'ov';
   if(localStorage.getItem('hw_idx_view') === 'list') state.view = 'list';
@@ -3355,7 +3391,6 @@ window.addEventListener('offline', function(){ renderSync(); });
      Not invoiced    = No Allocation Yet Qty, on items with stock entered.
      Waiting payment = INVOICED Qty (invoice sent, not paid yet).
    ============================================================ */
-var OV_SHOW = 8;
 function fmt(n){ return Number(n || 0).toLocaleString('en-US'); }
 function ovData(){
   var d = {x:[], over:[], noinv:[], pay:[], skipN:0, skipQty:0};
@@ -3403,6 +3438,12 @@ function offerListText(rows){
     rows.map(function(r){ return '- ' + r.it.name + ': ' + r.n + ' pcs' + arrivingNote(r); }).join('\n');
 }
 
+/* the three follow-ups share the right column, one at a time (state.ovSide) */
+var OV_SIDE = [
+  {key:'over',  cls:'p-over',  tab:'Over-mined',      title:'Over-mined'},
+  {key:'noinv', cls:'p-noinv', tab:'Not invoiced',    title:'Not invoiced yet'},
+  {key:'pay',   cls:'p-pay',   tab:'Waiting payment', title:'Waiting for payment'}
+];
 function renderOverview(){
   var el = $('#overview');
   if(!sheetOn()){
@@ -3413,23 +3454,27 @@ function renderOverview(){
       (loading ? '' : '<button class="tbtn primary" data-ovconnect>Connect sheet</button>') + '</div>';
     return;
   }
+  /* a redraw (sheet sync, tab switch) keeps each list where it was scrolled, as long as it shows the same tab */
+  var keep = {};
+  Array.prototype.forEach.call(el.querySelectorAll('.ovscroll'), function(n){ keep[n.dataset.view] = n.scrollTop; });
+
   var d = ovData(), rows = ovTabRows(d), free = sum(d.x);
   var nNow = d.x.filter(function(r){ return !r.later; }).length;
   var h = '<div class="ov'+(quiet ? ' still' : '')+'">';
 
-  h += '<header class="ovhead"><div>' +
+  /* LEFT: extra stock to offer */
+  h += '<section class="ovmain" aria-label="Extra stock to offer">';
+  h += '<header class="ovhead">' +
        '<h2>'+(free ? plural(free, 'piece', 'pieces')+' free to offer' : 'No extra stock right now')+'</h2>' +
        '<p>'+(d.x.length ? plural(d.x.length, 'item has', 'items have')+' stock nobody has mined yet. Pass these on to other customers. ' : '') +
-       'Numbers from the Dashboard tab, synced <span id="ovAt">'+esc(sheetTime(sheetCache.at))+'</span>.</p></div>' +
-       (rows.length ? '<button class="tbtn primary" data-ovcopyall>Copy list</button>' : '') +
-       '</header>';
-
-  h += '<div class="ovgrid"><section aria-label="Extra stock to offer">';
-  h += '<div class="ovtabs" role="group" aria-label="Show">' +
+       'Numbers from the Dashboard tab, synced <span id="ovAt">'+esc(sheetTime(sheetCache.at))+'</span>.</p></header>';
+  h += '<div class="ovtools"><div class="ovtabs" role="group" aria-label="Show">' +
        [['all', 'All', d.x.length], ['now', 'In hand', nNow], ['later', 'Arriving', d.x.length - nNow]].map(function(t){
          return '<button data-ovtab="'+t[0]+'" aria-pressed="'+(state.ovTab === t[0])+'">'+t[1]+'<b>'+t[2]+'</b></button>';
-       }).join('') + '</div>';
-  h += '<div data-ovp="x">';
+       }).join('') + '</div>' +
+       (rows.length ? '<button class="tbtn primary" data-ovcopyall title="Copy this list for the group chat">Copy list</button>' : '') +
+       '</div>';
+  h += '<div class="ovscroll" data-ovp="x" data-view="x-'+state.ovTab+'" tabindex="0" aria-label="Extra stock list">';
   if(!rows.length) h += '<div class="ovnone">Nothing here. Try All.</div>';
   rows.forEach(function(r, i){
     var it = r.it, s = r.s, taken = s.supply - r.n;
@@ -3437,15 +3482,17 @@ function renderOverview(){
     h += '<div class="xrow" data-code="'+esc(it.code)+'"'+(state.selected === it.code ? ' aria-current="true"' : '')+'>' +
       '<span class="xthumb"><img src="'+esc(photoSrc(photoFile(it)))+'" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;ph&quot;>—</span>\'"></span>' +
       '<div class="xmain">' +
-        '<button class="xname" data-ovopen>'+esc(it.name)+'</button>' +
+        '<button class="xname" data-ovopen title="'+esc(it.name)+'">'+esc(it.name)+'</button>' +
         '<span class="xcode mono">'+esc(it.code)+'</span>' +
+      '</div>' +
+      '<div class="xmeter">' +
         '<div class="xbar"'+dl+' role="img" aria-label="'+taken+' taken, '+r.now+' free in hand, '+r.later+' free arriving, of '+s.supply+' ordered">' +
           (taken > 0 ? '<i class="t" style="flex:'+taken+'"></i>' : '') +
           (r.now ? '<i class="f" style="flex:'+r.now+'"></i>' : '') +
           (r.later ? '<i class="l" style="flex:'+r.later+'"></i>' : '') +
         '</div>' +
-        '<span class="xcap mono">'+fmt(taken)+' taken of '+fmt(s.supply)+' ordered' +
-          (r.later ? ', <span class="arr">'+fmt(r.later)+' still arriving</span>' : '')+'</span>' +
+        '<span class="xcap mono">'+fmt(taken)+' of '+fmt(s.supply)+' taken' +
+          (r.later ? ', <span class="arr">'+fmt(r.later)+' arriving</span>' : '')+'</span>' +
       '</div>' +
       '<div class="xnum"><b>'+fmt(r.n)+'</b><span>free</span></div>' +
       '<button class="tbtn xcopy" data-ovcopy="'+esc(it.code)+'" title="Copy name, pieces and post link">Copy</button>' +
@@ -3453,36 +3500,49 @@ function renderOverview(){
   });
   h += '</div></section>';
 
-  h += '<aside class="ovside">';
-  h += panel('over', 'p-over', 'Over-mined',
-    d.over.length ? plural(sum(d.over), 'piece', 'pieces')+' mined over the stock, on '+plural(d.over.length, 'item', 'items')+'. Tell the extra miners they did not get, or order more.'
-                  : 'No item has more miners than stock.',
-    d.over, function(r){ return fmt(r.s.supply)+' ordered, '+fmt(r.s.supply + r.n)+' taken'; }, function(r){ return '−' + fmt(r.n); });
-  h += panel('noinv', 'p-noinv', 'Not invoiced yet',
-    d.noinv.length ? plural(sum(d.noinv), 'mined piece has', 'mined pieces have')+' no invoice yet, on '+plural(d.noinv.length, 'item', 'items')+'.'
-                   : 'Every mined piece has an invoice.',
-    d.noinv, function(r){ return fmt(r.s.source)+' mined, '+fmt(r.s.collection)+' invoiced or paid'; }, function(r){ return fmt(r.n); },
-    d.skipN ? 'Left out: '+plural(d.skipN, 'item', 'items')+' with no stock numbers in the sheet ('+fmt(d.skipQty)+' pieces).' : '');
-  h += panel('pay', 'p-pay', 'Waiting for payment',
-    d.pay.length ? plural(sum(d.pay), 'invoiced piece is', 'invoiced pieces are')+' not paid yet, on '+plural(d.pay.length, 'item', 'items')+'.'
-                 : 'Every invoice is paid.',
-    d.pay, function(r){ return pct(r.s.completion)+' paid'; }, function(r){ return fmt(r.n); });
-  h += '</aside></div></div>';
+  /* RIGHT: follow-ups, one list at a time. The tabs show every count, so nothing hides below the fold. */
+  var side = {
+    over: {list:d.over,
+      lead: d.over.length ? plural(sum(d.over), 'piece', 'pieces')+' mined over the stock, on '+plural(d.over.length, 'item', 'items')+'. Tell the extra miners they did not get, or order more.'
+                          : 'No item has more miners than stock.',
+      sub: function(r){ return fmt(r.s.supply)+' ordered, '+fmt(r.s.supply + r.n)+' taken'; },
+      num: function(r){ return '−' + fmt(r.n); }},
+    noinv: {list:d.noinv,
+      lead: d.noinv.length ? plural(sum(d.noinv), 'mined piece has', 'mined pieces have')+' no invoice yet, on '+plural(d.noinv.length, 'item', 'items')+'.'
+                           : 'Every mined piece has an invoice.',
+      sub: function(r){ return fmt(r.s.source)+' mined, '+fmt(r.s.collection)+' invoiced or paid'; },
+      num: function(r){ return fmt(r.n); },
+      note: d.skipN ? 'Left out: '+plural(d.skipN, 'item', 'items')+' with no stock numbers in the sheet ('+fmt(d.skipQty)+' pieces).' : ''},
+    pay: {list:d.pay,
+      lead: d.pay.length ? plural(sum(d.pay), 'invoiced piece is', 'invoiced pieces are')+' not paid yet, on '+plural(d.pay.length, 'item', 'items')+'.'
+                         : 'Every invoice is paid.',
+      sub: function(r){ return pct(r.s.completion)+' paid'; },
+      num: function(r){ return fmt(r.n); }}
+  };
+  var cur = OV_SIDE.filter(function(t){ return t.key === state.ovSide; })[0] || OV_SIDE[0];
+  var p = side[cur.key];
+  h += '<aside class="ovside" aria-label="Follow-ups">';
+  h += '<div class="ostabs" role="tablist" aria-label="Follow-ups">' + OV_SIDE.map(function(t){
+         var l = side[t.key].list, pcs = sum(l);
+         return '<button class="ostab '+t.cls+'" role="tab" data-ovside="'+t.key+'" aria-selected="'+(t.key === cur.key)+'">' +
+                '<span class="ostt">'+t.tab+'</span><b>'+(t.key === 'over' && pcs ? '−' : '')+fmt(pcs)+'</b>' +
+                '<span class="ostn">'+plural(l.length, 'item', 'items')+'</span></button>';
+       }).join('') + '</div>';
+  h += '<p class="olead">'+p.lead+'</p>';
+  h += '<div class="ovscroll '+cur.cls+'" data-ovp="'+cur.key+'" data-view="side-'+cur.key+'" role="tabpanel" tabindex="0" aria-label="'+cur.title+'">';
+  if(!p.list.length) h += '<div class="ovnone">Nothing to follow up.</div>';
+  p.list.forEach(function(r){
+    h += '<button class="orow" data-code="'+esc(r.it.code)+'"'+(state.selected === r.it.code ? ' aria-current="true"' : '')+'>' +
+         '<span><span class="oname">'+esc(r.it.name)+'</span><span class="osub">'+p.sub(r)+'</span></span>' +
+         '<span class="onum">'+p.num(r)+'</span></button>';
+  });
+  if(p.note) h += '<p class="onote">'+p.note+'</p>';
+  h += '</div></aside></div>';
   el.innerHTML = h;
 
-  function panel(key, cls, title, lead, list, sub, num, note){
-    var open = state.ovOpen[key], show = open ? list : list.slice(0, OV_SHOW);
-    var o = '<section class="opanel '+cls+'" aria-label="'+title+'"><h3>'+title+'</h3><p>'+lead+'</p><div data-ovp="'+key+'">';
-    show.forEach(function(r){
-      o += '<button class="orow" data-code="'+esc(r.it.code)+'"'+(state.selected === r.it.code ? ' aria-current="true"' : '')+'>' +
-           '<span><span class="oname">'+esc(r.it.name)+'</span><span class="osub">'+sub(r)+'</span></span>' +
-           '<span class="onum">'+num(r)+'</span></button>';
-    });
-    o += '</div>';
-    if(list.length > OV_SHOW) o += '<button class="omore" data-ovmore="'+key+'">'+(open ? 'Show fewer' : 'Show all '+list.length)+'</button>';
-    if(note) o += '<p class="onote">'+note+'</p>';
-    return o + '</section>';
-  }
+  Array.prototype.forEach.call(el.querySelectorAll('.ovscroll'), function(n){
+    if(keep[n.dataset.view]) n.scrollTop = keep[n.dataset.view];
+  });
 }
 
 function setMode(m){
@@ -3491,7 +3551,7 @@ function setMode(m){
   try{ localStorage.setItem('hw_idx_mode', m); }catch(e){}
   applyView();
   render();
-  if(m === 'ov') $('#overview').scrollTop = 0;
+  if(m === 'ov'){ $('#overview').scrollTop = 0; Array.prototype.forEach.call(document.querySelectorAll('#overview .ovscroll'), function(n){ n.scrollTop = 0; }); }
 }
 $('#modetog').addEventListener('click', function(e){
   var b = e.target.closest('[data-mode]');
@@ -3503,9 +3563,11 @@ $('#overview').addEventListener('click', function(e){
   if((t = e.target.closest('[data-ovtab]'))){
     state.ovTab = t.dataset.ovtab; renderOverview(); return;
   }
-  if((t = e.target.closest('[data-ovmore]'))){
-    state.ovOpen[t.dataset.ovmore] = !state.ovOpen[t.dataset.ovmore];
-    quiet = true; renderOverview(); quiet = false; return;
+  if((t = e.target.closest('[data-ovside]'))){
+    state.ovSide = t.dataset.ovside;
+    quiet = true; renderOverview(); quiet = false;
+    var tb = $('#overview [data-ovside="'+state.ovSide+'"]'); if(tb) tb.focus();
+    return;
   }
   var d = ovData();
   if(e.target.closest('[data-ovcopyall]')){
