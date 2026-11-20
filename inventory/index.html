@@ -1116,13 +1116,22 @@ select.sortsel{
   padding:9px 10px 10px;border:1px solid var(--rule);border-top:3px solid var(--ink-3);border-radius:3px;
   color:var(--ink-2);transition:background .14s ease,border-color .14s ease;
 }
-.ostab.p-over{border-top-color:var(--bad)}
-.ostab.p-pay{border-top-color:var(--accent)}
+/* each tab has its own color (--tc) and soft fill (--tf) */
+.ostab.p-over{--tc:var(--bad);--tf:var(--bad-soft);border-top-color:var(--bad)}
+.ostab.p-noinv{--tc:var(--ink-2);--tf:var(--paper-3)}
+.ostab.p-pay{--tc:var(--accent);--tf:var(--accent-soft);border-top-color:var(--accent)}
+.ostab{position:relative}
+.ostab .ostt{color:var(--ink-3);transition:color .14s ease}
 .ostab:hover{background:var(--paper-2)}
-.ostab[aria-selected="true"]{background:var(--paper-2);border-color:var(--rule-2);color:var(--ink)}
-.ostab.p-over[aria-selected="true"]{border-top-color:var(--bad)}
-.ostab.p-noinv[aria-selected="true"]{border-top-color:var(--ink-3)}
-.ostab.p-pay[aria-selected="true"]{border-top-color:var(--accent)}
+.ostab:hover .ostt{color:var(--ink)}
+/* active: the whole tab takes its color, fills softly, and points down at its list */
+.ostab[aria-selected="true"]{background:var(--tf);border-color:var(--tc);box-shadow:inset 0 0 0 1px var(--tc)}
+.ostab[aria-selected="true"] .ostt{color:var(--ink)}
+.ostab[aria-selected="true"]::after{
+  content:'';position:absolute;left:50%;bottom:-7px;width:11px;height:11px;
+  background:var(--tf);border-right:2px solid var(--tc);border-bottom:2px solid var(--tc);
+  transform:translateX(-50%) rotate(45deg);
+}
 .ostt{font-family:var(--font-cond);font-weight:700;font-size:15px;line-height:1.05;text-transform:uppercase;letter-spacing:.01em}
 .ostab b{margin-top:auto;padding-top:6px;font-family:var(--font-cond);font-weight:800;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
 .ostab.p-over b{color:var(--bad)}
